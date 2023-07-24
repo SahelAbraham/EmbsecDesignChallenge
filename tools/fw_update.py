@@ -29,6 +29,9 @@ import socket
 
 from util import *
 
+from pwn import *
+from Crypto.Util.Padding import pad
+
 RESP_OK = b"\x00"
 FRAME_SIZE = 256
 
@@ -44,12 +47,17 @@ def send_metadata(ser, metadata, debug=False):
     while ser.read(1).decode() != "U":
         print("got a byte")
         pass
-
+        
     # Send size and version to bootloader.
     if debug:
         print(metadata)
 
-    ser.write(metadata)
+    if len(version)!=16:
+        version = pad(version, 16)
+    if len(size)!=16:
+        size = pad(size,16)
+    ser.write(p16(version, endian = "little"))
+    ser.write(p16(size, endian = "little"))
 
     # Wait for an OK from the bootloader.
     resp = ser.read(1)
@@ -75,6 +83,84 @@ def send_frame(ser, frame, debug=False):
 
 
 def update(ser, infile, debug):
+    # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
+    with open(infile, "rb") as fp:
+        firmware_blob = fp.read()
+
+    metadata = firmware_blob[:4]
+    firmware = firmware_blob[4:]
+
+    send_metadata(ser, metadata, debug=debug)
+
+    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
+        data = firmware[frame_start : frame_start + FRAME_SIZE]
+
+        # Get length of data.
+        length = len(data)
+        frame_fmt = ">H{}s".format(length)
+
+        # Construct frame.
+        frame = struct.pack(frame_fmt, length, data)
+
+        send_frame(ser, frame, debug=debug)
+        print(f"Wrote frame {idx} ({len(frame)} bytes)")
+
+    print("Done writing firmware.")
+
+    # Send a zero length payload to tell the bootlader to finish writing it's page.
+    ser.write(struct.pack(">H", 0x0000))
+    resp = ser.read(1)  # Wait for an OK from the bootloader
+    if resp != RESP_OK:
+        raise RuntimeError("ERROR: Bootloader responded to zero length frame with {}".format(repr(resp)))
+    print(f"Wrote zero length frame (2 bytes)")
+
+    return ser
+
+
+
+
+def send_metadata_default(ser, metadata, debug=False):
+    version, size = struct.unpack_from("<HH", metadata)
+    print(f"Version: {version}\nSize: {size} bytes\n")
+
+    # Handshake for update
+    ser.write(b"U")
+
+    print("Waiting for bootloader to enter update mode...")
+    while ser.read(1).decode() != "U":
+        print("got a byte")
+        pass
+
+    # Send size and version to bootloader.
+    if debug:
+        print(metadata)
+
+    ser.write(metadata)
+
+    # Wait for an OK from the bootloader.
+    resp = ser.read(1)
+    if resp != RESP_OK:
+        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
+
+
+def send_frame_default(ser, frame, debug=False):
+    ser.write(frame)  # Write the frame...
+
+    if debug:
+        print_hex(frame)
+
+    resp = ser.read(1)  # Wait for an OK from the bootloader
+
+    time.sleep(0.1)
+
+    if resp != RESP_OK:
+        raise RuntimeError("ERROR: Bootloader responded with {}".format(repr(resp)))
+
+    if debug:
+        print("Resp: {}".format(ord(resp)))
+
+
+def update_default(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     with open(infile, "rb") as fp:
         firmware_blob = fp.read()

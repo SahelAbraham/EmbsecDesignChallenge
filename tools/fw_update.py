@@ -29,8 +29,9 @@ import socket
 
 from util import *
 
-from pwn import *
+from pwn import p16
 from Crypto.Util.Padding import pad
+from Crypto.Hash import SHA256
 
 RESP_OK = b"\x00"
 FRAME_SIZE = 256
@@ -66,11 +67,16 @@ def send_metadata(ser, metadata, debug=False):
 
 
 def send_frame(ser, frame, debug=False):
+    ser.write(p16(1,endian = "little"))
+    length = 0
     ser.write(frame)  # Write the frame...
 
     if debug:
         print_hex(frame)
-
+    
+    for i in range (len(frame)):
+        length+=frame[i]
+    ser.write(SHA256.new(length).hexdigest)
     resp = ser.read(1)  # Wait for an OK from the bootloader
 
     time.sleep(0.1)
@@ -91,7 +97,7 @@ def update(ser, infile, debug):
     firmware = firmware_blob[4:]
 
     send_metadata(ser, metadata, debug=debug)
-
+    ser.write(p16(0,endian = "little"))
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
         data = firmware[frame_start : frame_start + FRAME_SIZE]
 
@@ -104,6 +110,7 @@ def update(ser, infile, debug):
 
         send_frame(ser, frame, debug=debug)
         print(f"Wrote frame {idx} ({len(frame)} bytes)")
+    ser.write(p16(2,endian = "little"))
 
     print("Done writing firmware.")
 

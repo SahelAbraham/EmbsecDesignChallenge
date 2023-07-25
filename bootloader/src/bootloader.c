@@ -1,6 +1,7 @@
 // Copyright 2023 The MITRE Corporation. ALL RIGHTS RESERVED
 // Approved for public release. Distribution unlimited 23-02181-13.
-
+//Includes 
+#include <stdbool.h>
 // Hardware Imports
 #include "inc/hw_memmap.h" // Peripheral Base Addresses
 #include "inc/lm3s6965.h"  // Peripheral Bit Masks and Registers
@@ -74,6 +75,14 @@ int main(void){
     uart_write_str(UART2, "Send \"U\" to update, and \"B\" to run the firmware.\n");
     uart_write_str(UART2, "Writing 0x20 to UART0 will reset the device.\n");
 
+    int num_frames = sizeof(cipher_frames) / sizeof(cipher_frames[0]);
+
+    char* ciphertext = compile_ciphertext(cipher_frames, num_frames);
+    if(ciphertext == NULL){
+        printf("Fail\n");
+        return 1;
+    }
+    
     int resp;
     while (1){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
@@ -88,6 +97,54 @@ int main(void){
         }
     }
 }
+//Compile back to cipher text 
+char* compile_ciphertext(char** cipher_frames, int num_frames){
+    int total_length = 0; 
+    for(int i = 0; i < num_frames){
+        total_length += strlen(cipher_frames[i]);
+    }
+
+    char* ciphertext = (char*)malloc(total_lenght+1);
+    if(ciphertext == NULL)[
+        return NULL;
+    ]
+
+    int offset = 0; 
+    for(int i = 0; i < num_frames; i++){
+        strcpy(ciphertext + offset. cipher_frames[i]);
+        offset += strlen(cipher_frames[i]);
+    }
+    return ciphertext;
+}
+
+// CHECK SUM 
+unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
+    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
+
+    // Calculate checksum each custom algorithm
+    for (uint32_t i = 0; i < data_len; i++) {
+        if (i == 0 , i == 1 , i == 2) {
+            continue; // Skip the start delimiter and length bytes
+        }
+        checksum += data[i];
+    }
+
+    return (unsigned char)(checksum & 0xFF); // Keep only the lowest 8 bits
+}
+
+//verifying if checksum for frames are correct
+bool verify_frame(const unsigned char* frame_data, uint32_t frame_len){
+    if (frame_len < 2) {
+        return false;//we return false because frame is too small for checksum
+    }
+
+    //checks the payload
+    unsigned char calculate_checksum = calculate_custom_checksum(frame_data, frame_len-1);
+
+    //check the last digit
+    return (calculate_checksum == frame_data[frame_len - 1]);
+}
+
 
 /*
  * Load initial firmware into flash

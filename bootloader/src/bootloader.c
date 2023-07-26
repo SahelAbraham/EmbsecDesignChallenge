@@ -234,8 +234,11 @@ void load_firmware(void){
     uint32_t version = 0;
     uint32_t size = 0;
 <<<<<<< HEAD
+<<<<<<< HEAD
     /*
 =======
+=======
+>>>>>>> 5e9b1dc28d51b7a5b9cbd1cd442332dd538d088a
     
 >>>>>>> 95c4ae11af4abfb540c1beebf19f9dcd8e19bc30
     uint8_t data[DATA_SIZE];
@@ -261,11 +264,17 @@ void load_firmware(void){
 
     // Get size as 16 bytes 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     uint32_t start_msg = 0;
 
     // Get 2 byte message type
 >>>>>>> 95c4ae11af4abfb540c1beebf19f9dcd8e19bc30
+=======
+    uint32_t start_msg = 0;
+
+    // Get 2 byte message type
+>>>>>>> 5e9b1dc28d51b7a5b9cbd1cd442332dd538d088a
     rcv = uart_read(UART1, BLOCKING, &read);
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);

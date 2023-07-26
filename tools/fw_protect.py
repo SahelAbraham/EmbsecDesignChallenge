@@ -9,50 +9,60 @@ Firmware Bundle-and-Protect Tool
 """
 import argparse
 import struct
-import pycryptodome
+import cryptography
+import os
+from Crypto.Hash import SHA256
+from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Util.Padding import pad
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
     with open(infile, 'rb') as fp:
         firmware = fp.read()
 
-    # Append null-terminated message to end of firmware
-    firmware_and_message = firmware + message.encode() + b'\00'
+    # Append firmware to message, separated by a null byte
+    message_and_firmware = message.encode() + b'\00' + firmware
 
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
     # Hash the firmware using SHA-256
-    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-    digest.update(firmware_and_message)
-    firmware_hash = digest.finalize()
+    hash = SHA256.new()
+    hash.update(metadata+message_and_firmware)
+    firmware_hash = hash.hexdigest()
 
     # Load secrets for encryption and signing
-    with open(secrets_file, 'rb') as secrets_fp:
+    with open("secret_build_output.txt", 'r') as secrets_fp:
         secrets = secrets_fp.read()
+
+    # Splits the keys with the new line ther are index 0 - AES key, 1- RSA Private Key, 2- RSA Public Key
+    secrets = secrets.split('\n\n')
+
+    # Assign the 0,1 index in secrets to aes_key
+    aes_key1 = bytes(secrets[0], encoding = 'utf8')
+    aes_key2 = bytes(secrets[1], encoding = 'utf8')
     
-    # Split secrets into AES key and RSA private key
-    aes_key = secrets[:32]
-    rsa_private_key = serialization.load_pem_private_key(secrets[32:], password=None, backend=default_backend())
+    # Make an IV
+    aes_cbc_iv = os.urandom(16) 
 
-    # Encrypt firmware with AES-GCM
-    aes_gcm_iv = os.urandom(12)
-    aes_gcm = Cipher(algorithms.AES(aes_key), modes.GCM(aes_gcm_iv), backend=default_backend()).encryptor()
-    ciphertext = aes_gcm.update(firmware_and_message) + aes_gcm.finalize()
+    # Encrypt metadata+firmware+hash with AES-GCM
+    all_data = metadata + message_and_firmware + bytes(firmware_hash,encoding = 'utf8')
+    cipher = AES.new(aes_key1, AES.MODE_CBC,iv=aes_cbc_iv)
+    ciphertext = cipher.encrypt(pad(all_data,16))
 
-    # Encrypt AES-GCM IV with RSA public key
-    rsa_cipher = rsa_private_key.public_key().encrypt(aes_gcm_iv, padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
-
-    # Create the final protected firmware blob
-    protected_firmware_blob = metadata + rsa_cipher + ciphertext + firmware_hash
+    # Encrypt AES-GCM IV with AES
+    ciphertext_iv = ciphertext + aes_cbc_iv
+    cipher = AES.new(aes_key2, AES.MODE_GCM)
     
-    # Append firmware and message to metadata
-    firmware_blob = metadata + firmware_and_message
+    ciphertext_final= cipher.encrypt(pad(ciphertext_iv,16))
 
     # Write firmware blob to outfile
     with open(outfile, 'wb+') as outfile:
-        outfile.write(firmware_blob)
+        outfile.write(ciphertext_final)
 
+#python3 fw_protect.py --infile firmware.ld --outfile protected_firmware.bin --version 1.0.0 --message "Update Message"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Firmware Update Tool')
@@ -63,3 +73,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     protect_firmware(infile=args.infile, outfile=args.outfile, version=int(args.version), message=args.message)
+
+
+
+
+# verison size message null firmware , hash 0x20 , CBC_IV 0x10
+########### AES_CBC ENCRYPTION ######
+####################### AES_GCM ############# + GCM_IV

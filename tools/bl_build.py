@@ -56,17 +56,14 @@ if __name__ == "__main__":
         raise FileNotFoundError(
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
-    aeskey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key
-    tempkey = RSA.generate(2048) #generates "key base" to be used with public and private RSA keys
-    rsapriv = tempkey.export_key() #generates private RSA key
-    rsapub = tempkey.publickey().export_key() #generates public RSA key
+    gcmkey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key for GCM
+    cbckey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key for CBC
 
     open("secret_build_output.txt", "w").close() #clears secret_build_output.txt
     file = open('secret_build_output.txt', 'w') #opens secret_build_output.txt
-    file.write(aeskey) #writes AES key "secret_build_output.txt"
+    file.write(cbckey) #writes AES key "secret_build_output.txt"
     file.write('\n')
-    file.write(rsapub) #writes RSA public key to "secret_build_output.txt"
-    file.write('\n')
+    file.write(gcmkey)
     file.close #closes "secret_build_output.txt"
 
     open('main.bin', 'w').close()

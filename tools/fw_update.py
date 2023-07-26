@@ -66,18 +66,19 @@ def send_metadata(ser, metadata, debug=False):
 
 def send_frame(ser, frame, debug=False):
     ser.write(p16(1,endian = "little"))
-    length = 0
+    checksum = 0
     ser.write(frame)  # Write the frame...
 
     if debug:
         print_hex(frame)
     
     for i in range (len(frame)):
-        length+=frame[i]
+        checksum+=frame[i]
     hash = SHA256.new()
-    hash.update(bytes(length))
-    print(hash.digest())
-    ser.write(hash.digest())
+    hash.update(bytes(checksum))
+    hashed_checksum = bytes(hash.hexdigest(),encoding = 'utf8')
+    print(hashed_checksum)
+    ser.write(hashed_checksum)
     resp = ser.read(1)  # Wait for an OK from the bootloader
 
     time.sleep(0.1)
@@ -92,15 +93,12 @@ def send_frame(ser, frame, debug=False):
 def update(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     with open(infile, "rb") as fp:
-        firmware_blob = fp.read()
+        all_data = fp.read()
 
-    metadata = firmware_blob[:4]
-    firmware = firmware_blob[4:]
-
-    send_metadata(ser, metadata, debug=debug)
+    print("Writing firmware.")
     ser.write(p16(0,endian = "little"))
-    for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
-        data = firmware[frame_start : frame_start + FRAME_SIZE]
+    for idx, frame_start in enumerate(range(0, len(all_data), FRAME_SIZE)):
+        data = all_data[frame_start : frame_start + FRAME_SIZE]
 
         # Get length of data.
         length = len(data)

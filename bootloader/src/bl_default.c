@@ -1,7 +1,12 @@
 // Copyright 2023 The MITRE Corporation. ALL RIGHTS RESERVED
 // Approved for public release. Distribution unlimited 23-02181-13.
-//Includes 
-#include <stdbool.h>
+
+
+/*
+################  ORIGINAL INSECURE BOOTLOADER CODE - DO NOT USE  ######################
+*/
+
+
 // Hardware Imports
 #include "inc/hw_memmap.h" // Peripheral Base Addresses
 #include "inc/lm3s6965.h"  // Peripheral Bit Masks and Registers
@@ -15,8 +20,7 @@
 
 // Library Imports
 #include <string.h>
-#include "beaverssl.h"
-#include <stdio.h>
+
 // Application Imports
 #include "uart.h"
 
@@ -25,18 +29,11 @@ void load_initial_firmware(void);
 void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-void decrypt_aes(char*);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
-//Defines added
-#define FRAME_START 0
-#define FRAME_DATA 1
-#define FRAME_END 2
 
-#define FRAME_HEADER_SIZE 2
-#define HASH_SIZE 32
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -46,9 +43,7 @@ void decrypt_aes(char*);
 #define ERROR ((unsigned char)0x01)
 #define UPDATE ((unsigned char)'U')
 #define BOOT ((unsigned char)'B')
-#define START_FRAME ((unsigned char)0x00)
-#define DATA_FRAME ((unsigned char)0x01)
-#define END_FRAME ((unsigned char)0x02)
+
 // Firmware v2 is embedded in bootloader
 // Read up on these symbols in the objcopy man page (if you want)!
 extern int _binary_firmware_bin_start;
@@ -62,8 +57,6 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 
 // Firmware Buffer
 unsigned char data[FLASH_PAGESIZE];
-
-FILE *fptr;
 
 int main(void){
 
@@ -87,14 +80,6 @@ int main(void){
     uart_write_str(UART2, "Send \"U\" to update, and \"B\" to run the firmware.\n");
     uart_write_str(UART2, "Writing 0x20 to UART0 will reset the device.\n");
 
-    int num_frames = sizeof(cipher_frames) / sizeof(cipher_frames[0]);
-
-    char* ciphertext = compile_ciphertext(cipher_frames, num_frames);
-    if(ciphertext == NULL){
-        printf("Fail\n");
-        return 1;
-    }
-    
     int resp;
     while (1){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
@@ -109,119 +94,6 @@ int main(void){
         }
     }
 }
-//Compile back to cipher text 
-char* compile_ciphertext(char** cipher_frames, int num_frames){
-    int total_length = 0; 
-    for(int i = 0; i < num_frames){
-        total_length += strlen(cipher_frames[i]);
-    }
-
-    char* ciphertext = (char*)malloc(total_lenght+1);
-    if(ciphertext == NULL)[
-        return NULL;
-    ]
-
-    int offset = 0; 
-    for(int i = 0; i < num_frames; i++){
-        strcpy(ciphertext + offset. cipher_frames[i]);
-        offset += strlen(cipher_frames[i]);
-    }
-    return ciphertext;
-}
-
-void decrypt_aes(char data[]){
-    //read key from file
-    fptr = fopen("main.axf", "rb");
-    char AES_KEY_A[32];
-    fgets(AES_KEY_A, 32, fptr);
-    char AES_KEY_B[32];
-    fgets(AES_KEY_B, 32, fptr);
-    fclose(fptr); 
-    
-    //
-    aes_decrypt(AES_KEY_A, IV, data, 256);
-    aes_decrypt(AES_KEY_B, IV, data, 256);
-    
-
-    int count;
-    char fw_size[2];
-    for (size_t i = count; i < count+2; i++)
-    {
-        fw_size[i] = data[i];
-    }
-    uint16_t fw_size_int = fw_size[0] + (fw_size[1] << 8);
-    
-    count += 2;
-    char fw_ver[2];
-    for (size_t i = count; i < count+2; i++)
-    {
-        fw_ver[i] = data[i];
-    }
-
-    count += 2;
-    char msg_size[2];
-    for (size_t i = count; i < count+2; i++)
-    {
-        msg_size[i] = data[i];
-    }
-
-    count += 2;
-    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
-    char msg_data[msg_size_int];
-    for (size_t i = count; i < count+msg_size_int; i++)
-    {
-        msg_data[i] = data[i];
-    }
-    
-    count += msg_size_int;
-    char fw_data[fw_size_int];
-    for (size_t i = count; i < count+fw_size_int; i++)
-    {
-        fw_data[i] = data[i];
-    }
-    
-    count+=fw_size_int;
-    char hash[32];
-    for (size_t i = count; i < count+32; i++)
-    {
-        hash[i] = data[i];
-    }
-
-    count += 32;
-    char iv[16];
-    for (size_t i = count; i < count+16; i++)
-    {
-        hash[i] = data[i];
-    }
-}
-// CHECK SUM 
-unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
-    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
-
-    // Calculate checksum each custom algorithm
-    for (uint32_t i = 0; i < data_len; i++) {
-        if (i == 0 , i == 1 , i == 2) {
-            continue; // Skip the start delimiter and length bytes
-        }
-        checksum += data[i];
-    }
-
-    return (unsigned char)(checksum & 0xFF); // Keep only the lowest 8 bits
-}
-
-//verifying if checksum for frames are correct
-bool verify_frame(const unsigned char* frame_data, uint32_t frame_len){
-    if (frame_len < 2) {
-        return false;//we return false because frame is too small for checksum
-    }
-
-    //checks the payload
-    unsigned char calculate_checksum = calculate_custom_checksum(frame_data, frame_len-1);
-
-    //check the last digit
-    return (calculate_checksum == frame_data[frame_len - 1]);
-}
-
 
 /*
  * Load initial firmware into flash
@@ -293,14 +165,9 @@ void load_initial_firmware(void){
 
 /*
  * Load the firmware into flash.
- * Receieve all frames
- * Decrypt with GCM
- * Get version , size, message, iv
- * Decrypt rest with CBC
- * Get firmware and hash
  */
 void load_firmware(void){
-    int frame_length = 256;
+    int frame_length = 0;
     int read = 0;
     uint32_t rcv = 0;
 
@@ -308,65 +175,7 @@ void load_firmware(void){
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
-    
-    uint8_t plaintext[DATA_SIZE];
-    uint8_t ciphertext[DATA_SIZE];
-    SHA256_CTX sha256_ctx;
-    unsigned char hash[HASH_SIZE];
-    uint8_t frame_type = 0;
-    //waiting for the start frame
-    while(frame_type != FRAME_START){
-        rcv = uart_read(UART1, BLOCKING, &read);
-        frame_type = (uint8_t)rcv;
-    }
-    
-    while (frame_type != FRAME_END){
 
-        //grabbing 2 bytes - (start of frame)
-        rcv = uart_read(UART1, BLOCKING, &read);
-        frame_type = (uint8_t)rcv;
-
-        //read until...
-        if(frame_type != FRAME_DATA){
-            SysCtlReset();
-            return;
-        }
-
-        //compute the hash / get the data frame
-        for(int i = 0; i < DATA_SIZE + FRAME_HEADER_SIZE + HASH_SIZE; i++){
-            uint8_t rvc = uart_read(UART1, BLOCKING , &read);
-            if(i>= FRAME_HEADER_SIZE){
-                data[data_index] = rcv;
-                data_index++;
-            }
-        }
-
-        SHA256_Init(&sha256_ctx);
-        SHA256_Update(&sha256_ctx, data, DATA_SIZE);
-        SHA256_Final(hash, &sha256_ctx);
-
-        // Compare the hash with the last 32 bytes of the data frame
-        int hash_match = 1;
-        for (int i = 0; i < HASH_SIZE; i++) {
-            if (hash[i] != data[DATA_SIZE + i]) {
-                hash_match = 0;
-                break;
-            }
-        }
-
-        // If the hash matches, append the first 256 bytes of the data to the ciphertext buffer
-        if (hash_match) {
-            for (int i = 0; i < DATA_SIZE; i++) {
-                ciphertext[data_index - DATA_SIZE + i] = data[i];
-            }
-        } else {
-            // Terminate if the hash doesn't match.
-            SysCtlReset(); // Reset device
-            return;
-        }
-    }
-
-    
     // Get version as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);
     version = (uint32_t)rcv;

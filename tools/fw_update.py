@@ -39,8 +39,10 @@ FRAME_SIZE = 256
 
 def send_metadata(ser, metadata, debug=False):
     version, size = struct.unpack_from("<HH", metadata)
+    #version and size will already be in little endian 
     print(f"Version: {version}\nSize: {size} bytes\n")
-
+    version = bytes(version)
+    size = bytes(size)
     # Handshake for update
     ser.write(b"U")
 
@@ -48,17 +50,13 @@ def send_metadata(ser, metadata, debug=False):
     while ser.read(1).decode() != "U":
         print("got a byte")
         pass
-        
+    print("nice")
     # Send size and version to bootloader.
     if debug:
         print(metadata)
 
-    if len(version)!=16:
-        version = pad(version, 16)
-    if len(size)!=16:
-        size = pad(size,16)
-    ser.write(p16(version, endian = "little"))
-    ser.write(p16(size, endian = "little"))
+    ser.write(version)
+    ser.write(size)
 
     # Wait for an OK from the bootloader.
     resp = ser.read(1)
@@ -76,7 +74,10 @@ def send_frame(ser, frame, debug=False):
     
     for i in range (len(frame)):
         length+=frame[i]
-    ser.write(SHA256.new(length).hexdigest)
+    hash = SHA256.new()
+    hash.update(bytes(length))
+    print(hash.digest())
+    ser.write(hash.digest())
     resp = ser.read(1)  # Wait for an OK from the bootloader
 
     time.sleep(0.1)

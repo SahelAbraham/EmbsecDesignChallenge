@@ -15,6 +15,8 @@ from Crypto.Hash import SHA256
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
+import pycryptodome
+
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile

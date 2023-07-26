@@ -15,6 +15,10 @@ import pathlib
 import shutil
 import subprocess
 
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
+
 REPO_ROOT = pathlib.Path(__file__).parent.parent.absolute()
 BOOTLOADER_DIR = os.path.join(REPO_ROOT, "bootloader")
 
@@ -52,6 +56,21 @@ if __name__ == "__main__":
         raise FileNotFoundError(
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
+    gcmkey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key for GCM
+    cbckey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key for CBC
+
+    open("secret_build_output.txt", "w").close() #clears secret_build_output.txt
+    file = open('secret_build_output.txt', 'w') #opens secret_build_output.txt
+    file.write(cbckey) #writes AES key "secret_build_output.txt"
+    file.write('\n')
+    file.write(gcmkey)
+    file.close #closes "secret_build_output.txt"
+
+    open('main.bin', 'w').close()
+    file = open('main.bin', 'w')
+    file.write(aeskey) #writes AES key to "main.bin"
+    file.write('\n')
+    file.write(rsapriv) #writes RSA private key to "main.bin"
 
     copy_initial_firmware(firmware_path)
     make_bootloader()

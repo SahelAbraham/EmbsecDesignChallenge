@@ -104,7 +104,6 @@ int main(void){
         }
     }
 }
-<<<<<<< HEAD
 //Compile back to cipher text 
 char* compile_ciphertext(char** cipher_frames, int num_frames){
     int total_length = 0; 
@@ -125,10 +124,6 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
     return ciphertext;
 }
 
-// CHECK SUM 
-unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
-    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
-=======
 void decrypt_aes(char[] data){
     //read key from file
     fptr = fopen("main.axf", "rb");
@@ -193,7 +188,10 @@ void decrypt_aes(char[] data){
     {
         hash[i] = data[i];
     }
->>>>>>> c0929bf213c27a9ff3a8cb66de08c7218185399d
+}
+// CHECK SUM 
+unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
+    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
 
     // Calculate checksum each custom algorithm
     for (uint32_t i = 0; i < data_len; i++) {
@@ -300,14 +298,7 @@ void load_firmware(void){
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
-<<<<<<< HEAD
-<<<<<<< HEAD
-    /*
-=======
-=======
->>>>>>> 5e9b1dc28d51b7a5b9cbd1cd442332dd538d088a
     
->>>>>>> 95c4ae11af4abfb540c1beebf19f9dcd8e19bc30
     uint8_t data[DATA_SIZE];
     uint8_t ciphertext[DATA_SIZE];
     SHA256_CTX sha256_ctx;
@@ -318,7 +309,54 @@ void load_firmware(void){
         rcv = uart_read(UART1, BLOCKING, &read);
         frame_type = (uint8_t)rcv;
     }
-    */
+    
+    while (frame_type != FRAME_START){
+
+        //grabbing 2 bytes - (start of frame)
+        rcv = uart_read(UART1, BLOCKING, &read);
+        frame_type =m (uint8_t)rcv;
+
+        //read until...
+        if(frame_type != FRAME_DATA)[
+            SysCtlReset();
+            return;
+        ]
+
+        //compute the hash / get the data frame
+        for(int i = 0; i < DATA_SIZE + FRAME_HEADER_SIZE; i++){
+            rvc = uart_read(UART1, BLOCKING , &read);
+            if(i>= FRAME_HEADER_SIZE){
+                data[data_inex] = (uint8_t)rcv;
+                data_index++;
+            }
+        }
+
+        SHA256_Init(&sha256_ctx);
+        SHA256_Update(&sha256_ctx, data, DATA_SIZE);
+        SHA256_Final(hash, &sha256_ctx);
+
+        // Compare the hash with the last 32 bytes of the data frame
+        int hash_match = 1;
+        for (int i = 0; i < HASH_SIZE; i++) {
+            if (hash[i] != data[DATA_SIZE + i]) {
+                hash_match = 0;
+                break;
+            }
+        }
+
+        // If the hash matches, append the first 256 bytes of the data to the ciphertext buffer
+        if (hash_match) {
+            for (int i = 0; i < DATA_SIZE; i++) {
+                ciphertext[data_index - DATA_SIZE + i] = data[i];
+            }
+        } else {
+            // Terminate if the hash doesn't match.
+            SysCtlReset(); // Reset device
+            return;
+        }
+    }
+
+    
     // Get version as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);
     version = (uint32_t)rcv;
@@ -330,18 +368,6 @@ void load_firmware(void){
     nl(UART2);
 
     // Get size as 16 bytes 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    uint32_t start_msg = 0;
-
-    // Get 2 byte message type
->>>>>>> 95c4ae11af4abfb540c1beebf19f9dcd8e19bc30
-=======
-    uint32_t start_msg = 0;
-
-    // Get 2 byte message type
->>>>>>> 5e9b1dc28d51b7a5b9cbd1cd442332dd538d088a
     rcv = uart_read(UART1, BLOCKING, &read);
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);

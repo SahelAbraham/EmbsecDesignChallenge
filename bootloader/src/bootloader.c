@@ -213,7 +213,6 @@ void load_firmware(void){
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
-<<<<<<< HEAD
     
     uint8_t data[DATA_SIZE];
     uint8_t ciphertext[DATA_SIZE];
@@ -237,11 +236,9 @@ void load_firmware(void){
     nl(UART2);
 
     // Get size as 16 bytes 
-=======
     uint32_t start_msg = 0;
 
     // Get 2 byte message type
->>>>>>> main
     rcv = uart_read(UART1, BLOCKING, &read);
     start_msg = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);

@@ -106,26 +106,70 @@ int main(void){
         }
     }
 }
-void decrypt_aes(void){
+void decrypt_aes(char[] data){
     //read key from file
     fptr = fopen("main.axf", "rb");
-    char AES_KEY[32];
+    char AES_KEY_A[32];
+    fgets(AES_KEY, 32, fptr);
+    char AES_KEY_B[32];
     fgets(AES_KEY, 32, fptr);
     fclose(fptr); 
-
+    
     //
-    char FW_SIZE[2];
-    uint16_t FW_SIZE_INT = FW_SIZE[0] + (FW_SIZE[1] << 8);
-    char FW_VER[2];
-    char MSG_SIZE[2];
-    uint16_t MSG_SIZE_INT = MSG_SIZE[0] + (MSG_SIZE[1] << 8);
-    char MSG_DATA[MSG_SIZE_INT];
-    char FW_DATA[FW_SIZE_INT];
-    char HASH[32];
-    char IV[16];
+    aes_decrypt(AES_KEY_A, IV, data, 256);
+    aes_decrypt(AES_KEY_B, IV, data, 256);
+    
 
+    int count;
+    char fw_size[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        fw_size[i] = data[i];
+    }
+    uint16_t fw_size_int = fw_size[0] + (fw_size[1] << 8);
+    
+    count += 2;
+    char fw_ver[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        fw_ver[i] = data[i];
+    }
 
-    // aes_decrypt(AES_KEY, IV, MSG_DATA);
+    count += 2;
+    char msg_size[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        msg_size[i] = data[i];
+    }
+
+    count += 2;
+    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
+    char msg_data[msg_size_int];
+    for (size_t i = count; i < count+msg_size_int; i++)
+    {
+        msg_data[i] = data[i];
+    }
+    
+    count += msg_size_int;
+    char fw_data[fw_size_int];
+    for (size_t i = count; i < count+fw_size_int; i++)
+    {
+        fw_data[i] = data[i];
+    }
+    
+    count+=fw_size_int;
+    char hash[32];
+    for (size_t i = count; i < count+32; i++)
+    {
+        hash[i] = data[i];
+    }
+
+    count += 32;
+    char iv[16];
+    for (size_t i = count; i < count+16; i++)
+    {
+        hash[i] = data[i];
+    }
 
 
 }

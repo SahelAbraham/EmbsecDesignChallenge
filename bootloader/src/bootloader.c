@@ -37,7 +37,6 @@ void decrypt_aes(char*);
 
 #define FRAME_HEADER_SIZE 2
 #define HASH_SIZE 32
-#define DATA_SIZE 256
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -305,7 +304,7 @@ void load_firmware(void){
     uint32_t version = 0;
     uint32_t size = 0;
     
-    uint8_t data[DATA_SIZE];
+    uint8_t plaintext[DATA_SIZE];
     uint8_t ciphertext[DATA_SIZE];
     SHA256_CTX sha256_ctx;
     unsigned char hash[HASH_SIZE];
@@ -316,23 +315,23 @@ void load_firmware(void){
         frame_type = (uint8_t)rcv;
     }
     
-    while (frame_type != FRAME_START){
+    while (frame_type != FRAME_END){
 
         //grabbing 2 bytes - (start of frame)
         rcv = uart_read(UART1, BLOCKING, &read);
-        frame_type =m (uint8_t)rcv;
+        frame_type = (uint8_t)rcv;
 
         //read until...
-        if(frame_type != FRAME_DATA)[
+        if(frame_type != FRAME_DATA){
             SysCtlReset();
             return;
-        ]
+        }
 
         //compute the hash / get the data frame
-        for(int i = 0; i < DATA_SIZE + FRAME_HEADER_SIZE; i++){
-            rvc = uart_read(UART1, BLOCKING , &read);
+        for(int i = 0; i < DATA_SIZE + FRAME_HEADER_SIZE + HASH_SIZE; i++){
+            uint8_t rvc = uart_read(UART1, BLOCKING , &read);
             if(i>= FRAME_HEADER_SIZE){
-                data[data_inex] = (uint8_t)rcv;
+                data[data_index] = rcv;
                 data_index++;
             }
         }

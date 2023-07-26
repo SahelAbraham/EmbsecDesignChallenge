@@ -15,8 +15,7 @@ from Crypto.Hash import SHA256
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
-import pycryptodome
-
+from Crypto.Util.Padding import pad
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
@@ -31,9 +30,7 @@ def protect_firmware(infile, outfile, version, message):
 
     # Hash the firmware using SHA-256
     hash = SHA256.new()
-    hash.update(firmware_and_message)
-    # digest = hashes.Hash(hashes.SHA256())
-    # digest.update(firmware_and_message)
+    hash.update(metadata+message_and_firmware)
     firmware_hash = hash.hexdigest()
 
     # Load secrets for encryption and signing
@@ -44,21 +41,22 @@ def protect_firmware(infile, outfile, version, message):
     secrets = secrets.split('\n\n')
 
     # Assign the 0,1 index in secrets to aes_key
-    aes_key1 = secrets[0]
-    aes_key2 = secrets[1]
+    aes_key1 = bytes(secrets[0], encoding = 'utf8')
+    aes_key2 = bytes(secrets[1], encoding = 'utf8')
     
     # Make an IV
-    aes_cbc_iv = os.urandom(10) 
+    aes_cbc_iv = os.urandom(16) 
 
-    # Encrypt metadata+firmware with AES-GCM
-    all_data = metadata + message_and_firmware
+    # Encrypt metadata+firmware+hash with AES-GCM
+    all_data = metadata + message_and_firmware + bytes(firmware_hash,encoding = 'utf8')
     cipher = AES.new(aes_key1, AES.MODE_CBC,iv=aes_cbc_iv)
-    ciphertext, tag = cipher.encrypt_and_digest(all_data)
+    ciphertext = cipher.encrypt(pad(all_data,16))
 
     # Encrypt AES-GCM IV with AES
     ciphertext_iv = ciphertext + aes_cbc_iv
     cipher = AES.new(aes_key2, AES.MODE_GCM)
-    ciphertext_final, tag = cipher.encrypt_and_digest(ciphertext_iv)
+    
+    ciphertext_final= cipher.encrypt(pad(ciphertext_iv,16))
 
     # Write firmware blob to outfile
     with open(outfile, 'wb+') as outfile:
@@ -79,7 +77,6 @@ if __name__ == '__main__':
 
 
 
-# metadata, firmware, hash , IV 
 # verison size message null firmware , hash 0x20 , CBC_IV 0x10
-################## AES_CBC ENCRYPTION ###########
-################################### AES_GCM ##################
+########### AES_CBC ENCRYPTION ######
+####################### AES_GCM ############# + GCM_IV

@@ -28,7 +28,14 @@ long program_flash(uint32_t, unsigned char *, unsigned int);
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
+//Defines added
+#define FRAME_START 0
+#define FRAME_DATA 1
+#define FRAME_END 2
 
+#define FRAME_HEADER_SIZE 2
+#define HASH_SIZE 32
+#define DATA_SIZE 256
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -226,7 +233,18 @@ void load_firmware(void){
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
-
+    
+    uint8_t data[DATA_SIZE];
+    uint8_t ciphertext[DATA_SIZE];
+    SHA256_CTX sha256_ctx;
+    unsigned char hash[HASH_SIZE];
+    uint8_t frame_type = 0;
+    //waiting for the start frame
+    while(frame_type != FRAME_START){
+        rcv = uart_read(UART1, BLOCKING, &read);
+        frame_type = (uint8_t)rcv;
+    }
+    
     // Get version as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);
     version = (uint32_t)rcv;

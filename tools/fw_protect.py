@@ -9,7 +9,7 @@ Firmware Bundle-and-Protect Tool
 """
 import argparse
 import struct
-
+import pycryptodome
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile

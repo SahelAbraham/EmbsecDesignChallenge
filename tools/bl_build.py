@@ -15,6 +15,10 @@ import pathlib
 import shutil
 import subprocess
 
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
+
 REPO_ROOT = pathlib.Path(__file__).parent.parent.absolute()
 BOOTLOADER_DIR = os.path.join(REPO_ROOT, "bootloader")
 
@@ -52,6 +56,7 @@ if __name__ == "__main__":
         raise FileNotFoundError(
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
-
+    aeskey = get_random_bytes(32)
+    rsapub = RSA.generate(2048)
     copy_initial_firmware(firmware_path)
     make_bootloader()

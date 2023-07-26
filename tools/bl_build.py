@@ -56,7 +56,19 @@ if __name__ == "__main__":
         raise FileNotFoundError(
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
-    aeskey = get_random_bytes(32)
-    rsapub = RSA.generate(2048)
+    aeskey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key
+    tempkey = RSA.generate(2048) #generates "key base" to be used with public and private RSA keys
+    rsapriv = tempkey.export_key() #generates private RSA key
+    rsapub = tempkey.publickey().export_key() #generates public RSA key
+
+    open("filename", "w").close() #clears secret_build_output.txt
+    file = open('secret_build_output.txt', 'w') #opens secret_build_output.txt
+    file.write(aeskey) #writes AES key
+    file.write('\n')
+    file.write(rsapub) #writes RSA public key
+    file.write('\n')
+    file.write(rsapriv) #writes RSA private key
+    file.write('\n')
+
     copy_initial_firmware(firmware_path)
     make_bootloader()

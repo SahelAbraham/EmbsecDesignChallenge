@@ -58,7 +58,7 @@ unsigned char data[FLASH_PAGESIZE];
 
 // Keys 
 // char AES_KEY[32]; //= ; 
-// char RSA_KEY[32]; //= ;
+//char RSA_KEY[32]; //= ;
 
 FILE *fptr;
 

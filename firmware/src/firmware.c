@@ -9,6 +9,7 @@
 #include "util.h"
 #include "mitre_car.h"
 
+
 static const char *FLAG_RESPONSE = "Nice try.";
 
 void getFlag(char *flag)

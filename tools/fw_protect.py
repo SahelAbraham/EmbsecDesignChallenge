@@ -9,7 +9,7 @@ Firmware Bundle-and-Protect Tool
 """
 import argparse
 import struct
-
+import pycryptodome
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
@@ -22,6 +22,30 @@ def protect_firmware(infile, outfile, version, message):
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
 
+    # Hash the firmware using SHA-256
+    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+    digest.update(firmware_and_message)
+    firmware_hash = digest.finalize()
+
+    # Load secrets for encryption and signing
+    with open(secrets_file, 'rb') as secrets_fp:
+        secrets = secrets_fp.read()
+    
+    # Split secrets into AES key and RSA private key
+    aes_key = secrets[:32]
+    rsa_private_key = serialization.load_pem_private_key(secrets[32:], password=None, backend=default_backend())
+
+    # Encrypt firmware with AES-GCM
+    aes_gcm_iv = os.urandom(12)
+    aes_gcm = Cipher(algorithms.AES(aes_key), modes.GCM(aes_gcm_iv), backend=default_backend()).encryptor()
+    ciphertext = aes_gcm.update(firmware_and_message) + aes_gcm.finalize()
+
+    # Encrypt AES-GCM IV with RSA public key
+    rsa_cipher = rsa_private_key.public_key().encrypt(aes_gcm_iv, padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
+
+    # Create the final protected firmware blob
+    protected_firmware_blob = metadata + rsa_cipher + ciphertext + firmware_hash
+    
     # Append firmware and message to metadata
     firmware_blob = metadata + firmware_and_message
 

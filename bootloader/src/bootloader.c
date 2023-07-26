@@ -104,6 +104,7 @@ int main(void){
         }
     }
 }
+<<<<<<< HEAD
 //Compile back to cipher text 
 char* compile_ciphertext(char** cipher_frames, int num_frames){
     int total_length = 0; 
@@ -127,6 +128,72 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
 // CHECK SUM 
 unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
     unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
+=======
+void decrypt_aes(char[] data){
+    //read key from file
+    fptr = fopen("main.axf", "rb");
+    char AES_KEY_A[32];
+    fgets(AES_KEY, 32, fptr);
+    char AES_KEY_B[32];
+    fgets(AES_KEY, 32, fptr);
+    fclose(fptr); 
+    
+    //
+    aes_decrypt(AES_KEY_A, IV, data, 256);
+    aes_decrypt(AES_KEY_B, IV, data, 256);
+    
+
+    int count;
+    char fw_size[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        fw_size[i] = data[i];
+    }
+    uint16_t fw_size_int = fw_size[0] + (fw_size[1] << 8);
+    
+    count += 2;
+    char fw_ver[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        fw_ver[i] = data[i];
+    }
+
+    count += 2;
+    char msg_size[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        msg_size[i] = data[i];
+    }
+
+    count += 2;
+    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
+    char msg_data[msg_size_int];
+    for (size_t i = count; i < count+msg_size_int; i++)
+    {
+        msg_data[i] = data[i];
+    }
+    
+    count += msg_size_int;
+    char fw_data[fw_size_int];
+    for (size_t i = count; i < count+fw_size_int; i++)
+    {
+        fw_data[i] = data[i];
+    }
+    
+    count+=fw_size_int;
+    char hash[32];
+    for (size_t i = count; i < count+32; i++)
+    {
+        hash[i] = data[i];
+    }
+
+    count += 32;
+    char iv[16];
+    for (size_t i = count; i < count+16; i++)
+    {
+        hash[i] = data[i];
+    }
+>>>>>>> c0929bf213c27a9ff3a8cb66de08c7218185399d
 
     // Calculate checksum each custom algorithm
     for (uint32_t i = 0; i < data_len; i++) {

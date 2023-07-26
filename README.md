@@ -1,4 +1,6 @@
 # README
+## Tutorial Video
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
 
 ## Running the insecure example
 
@@ -12,13 +14,3 @@ Ensure that BearSSL is compiled for the stellaris: `cd ~/lib/BearSSL && make CON
 
 Copyright 2023 The MITRE Corporation. ALL RIGHTS RESERVED
 Approved for public release. Distribution unlimited 23-02181-13.
-
-test change
-test change 2
-
-test change 3
-test change 4
-
-test change 5
-
-test change 6

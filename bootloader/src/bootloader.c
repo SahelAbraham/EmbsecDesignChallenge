@@ -1,6 +1,7 @@
 // Copyright 2023 The MITRE Corporation. ALL RIGHTS RESERVED
 // Approved for public release. Distribution unlimited 23-02181-13.
-
+//Includes 
+#include <stdbool.h>
 // Hardware Imports
 #include "inc/hw_memmap.h" // Peripheral Base Addresses
 #include "inc/lm3s6965.h"  // Peripheral Bit Masks and Registers
@@ -14,8 +15,7 @@
 
 // Library Imports
 #include <string.h>
-#include "beaverssl.h"
-#include <stdio.h>
+
 // Application Imports
 #include "uart.h"
 
@@ -45,9 +45,6 @@ void decrypt_aes(char[]);
 #define ERROR ((unsigned char)0x01)
 #define UPDATE ((unsigned char)'U')
 #define BOOT ((unsigned char)'B')
-#define START_FRAME ((unsigned char)0x00)
-#define DATA_FRAME ((unsigned char)0x01)
-#define END_FRAME ((unsigned char)0x02)
 
 // Firmware v2 is embedded in bootloader
 // Read up on these symbols in the objcopy man page (if you want)!
@@ -62,12 +59,6 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 
 // Firmware Buffer
 unsigned char data[FLASH_PAGESIZE];
-
-// Keys 
-// char AES_KEY[32]; //= ; 
-//char RSA_KEY[32]; //= ;
-
-FILE *fptr;
 
 int main(void){
 
@@ -91,13 +82,20 @@ int main(void){
     uart_write_str(UART2, "Send \"U\" to update, and \"B\" to run the firmware.\n");
     uart_write_str(UART2, "Writing 0x20 to UART0 will reset the device.\n");
 
+    int num_frames = sizeof(cipher_frames) / sizeof(cipher_frames[0]);
+
+    char* ciphertext = compile_ciphertext(cipher_frames, num_frames);
+    if(ciphertext == NULL){
+        printf("Fail\n");
+        return 1;
+    }
+    
     int resp;
     while (1){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
         if (instruction == UPDATE){
             uart_write_str(UART1, "U");
             load_firmware();
-            //run decrypt functions 
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
         }else if (instruction == BOOT){
@@ -106,7 +104,27 @@ int main(void){
         }
     }
 }
-void decrypt_aes(char data[]){
+//Compile back to cipher text 
+char* compile_ciphertext(char** cipher_frames, int num_frames){
+    int total_length = 0; 
+    for(int i = 0; i < num_frames){
+        total_length += strlen(cipher_frames[i]);
+    }
+
+    char* ciphertext = (char*)malloc(total_lenght+1);
+    if(ciphertext == NULL)[
+        return NULL;
+    ]
+
+    int offset = 0; 
+    for(int i = 0; i < num_frames; i++){
+        strcpy(ciphertext + offset. cipher_frames[i]);
+        offset += strlen(cipher_frames[i]);
+    }
+    return ciphertext;
+}
+
+void decrypt_aes(char[] data){
     //read key from file
     fptr = fopen("main.axf", "rb");
     char AES_KEY_A[32];
@@ -170,12 +188,36 @@ void decrypt_aes(char data[]){
     {
         hash[i] = data[i];
     }
-
-
 }
-int bytes_to_int(){
+// CHECK SUM 
+unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
+    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
 
+    // Calculate checksum each custom algorithm
+    for (uint32_t i = 0; i < data_len; i++) {
+        if (i == 0 , i == 1 , i == 2) {
+            continue; // Skip the start delimiter and length bytes
+        }
+        checksum += data[i];
+    }
+
+    return (unsigned char)(checksum & 0xFF); // Keep only the lowest 8 bits
 }
+
+//verifying if checksum for frames are correct
+bool verify_frame(const unsigned char* frame_data, uint32_t frame_len){
+    if (frame_len < 2) {
+        return false;//we return false because frame is too small for checksum
+    }
+
+    //checks the payload
+    unsigned char calculate_checksum = calculate_custom_checksum(frame_data, frame_len-1);
+
+    //check the last digit
+    return (calculate_checksum == frame_data[frame_len - 1]);
+}
+
+
 /*
  * Load initial firmware into flash
  */
@@ -252,7 +294,6 @@ void load_firmware(void){
     int read = 0;
     uint32_t rcv = 0;
 
-
     uint32_t data_index = 0;
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
@@ -269,6 +310,53 @@ void load_firmware(void){
         frame_type = (uint8_t)rcv;
     }
     
+    while (frame_type != FRAME_START){
+
+        //grabbing 2 bytes - (start of frame)
+        rcv = uart_read(UART1, BLOCKING, &read);
+        frame_type =m (uint8_t)rcv;
+
+        //read until...
+        if(frame_type != FRAME_DATA)[
+            SysCtlReset();
+            return;
+        ]
+
+        //compute the hash / get the data frame
+        for(int i = 0; i < DATA_SIZE + FRAME_HEADER_SIZE; i++){
+            rvc = uart_read(UART1, BLOCKING , &read);
+            if(i>= FRAME_HEADER_SIZE){
+                data[data_inex] = (uint8_t)rcv;
+                data_index++;
+            }
+        }
+
+        SHA256_Init(&sha256_ctx);
+        SHA256_Update(&sha256_ctx, data, DATA_SIZE);
+        SHA256_Final(hash, &sha256_ctx);
+
+        // Compare the hash with the last 32 bytes of the data frame
+        int hash_match = 1;
+        for (int i = 0; i < HASH_SIZE; i++) {
+            if (hash[i] != data[DATA_SIZE + i]) {
+                hash_match = 0;
+                break;
+            }
+        }
+
+        // If the hash matches, append the first 256 bytes of the data to the ciphertext buffer
+        if (hash_match) {
+            for (int i = 0; i < DATA_SIZE; i++) {
+                ciphertext[data_index - DATA_SIZE + i] = data[i];
+            }
+        } else {
+            // Terminate if the hash doesn't match.
+            SysCtlReset(); // Reset device
+            return;
+        }
+    }
+
+    
     // Get version as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);
     version = (uint32_t)rcv;
@@ -280,61 +368,28 @@ void load_firmware(void){
     nl(UART2);
 
     // Get size as 16 bytes 
-    uint32_t start_msg = 0;
-
-    // Get 2 byte message type
     rcv = uart_read(UART1, BLOCKING, &read);
-    start_msg = (uint32_t)rcv;
+    size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
-    start_msg |= (uint32_t)rcv << 8;
+    size |= (uint32_t)rcv << 8;
 
-    if(start_msg == 1){
-        rcv = uart_read(UART1, BLOCKING, &read);
-        start_msg = (uint32_t)rcv;
-        rcv = uart_read(UART1, BLOCKING, &read);
-        start_msg |= (uint32_t)rcv << 8;
+    uart_write_str(UART2, "Received Firmware Size: ");
+    uart_write_hex(UART2, size);
+    nl(UART2);
+
+    // Compare to old version and abort if older (note special case for version 0).
+    uint16_t old_version = *fw_version_address;
+
+    if (version != 0 && version < old_version){
+        uart_write(UART1, ERROR); // Reject the metadata.
+        SysCtlReset();            // Reset device
+        return;
     }
 
-    if(start_msg == 1){
-        rcv = uart_read(UART1, BLOCKING, &read);
-        start_msg = (uint32_t)rcv;
-        rcv = uart_read(UART1, BLOCKING, &read);
-        start_msg |= (uint32_t)rcv << 8;
+    if (version == 0){
+        // If debug firmware, don't change version
+        version = old_version;
     }
-    
-    // // Get version as 16 bytes 
-    // rcv = uart_read(UART1, BLOCKING, &read);
-    // version = (uint32_t)rcv;
-    // rcv = uart_read(UART1, BLOCKING, &read);
-    // version |= (uint32_t)rcv << 8;
-
-    // uart_write_str(UART2, "Received Firmware Version: ");
-    // uart_write_hex(UART2, version);
-    // nl(UART2);
-
-    // // Get size as 16 bytes 
-    // rcv = uart_read(UART1, BLOCKING, &read);
-    // size = (uint32_t)rcv;
-    // rcv = uart_read(UART1, BLOCKING, &read);
-    // size |= (uint32_t)rcv << 8;
-
-    // uart_write_str(UART2, "Received Firmware Size: ");
-    // uart_write_hex(UART2, size);
-    // nl(UART2);
-
-    // // Compare to old version and abort if older (note special case for version 0).
-    // uint16_t old_version = *fw_version_address;
-
-    // if (version != 0 && version < old_version){
-    //     uart_write(UART1, ERROR); // Reject the metadata.
-    //     SysCtlReset();            // Reset device
-    //     return;
-    // }
-
-    // if (version == 0){
-    //     // If debug firmware, don't change version
-    //     version = old_version;
-    // }
 
     // Write new firmware size and version to Flash
     // Create 32 bit word for flash programming, version is at lower address, size is at higher address

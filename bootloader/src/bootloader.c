@@ -15,7 +15,8 @@
 
 // Library Imports
 #include <string.h>
-
+#include "beaverssl.h"
+#include <stdio.h>
 // Application Imports
 #include "uart.h"
 
@@ -24,7 +25,8 @@ void load_initial_firmware(void);
 void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-void decrypt_aes(char[]);
+void decrypt_aes(char*);
+
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
@@ -45,7 +47,9 @@ void decrypt_aes(char[]);
 #define ERROR ((unsigned char)0x01)
 #define UPDATE ((unsigned char)'U')
 #define BOOT ((unsigned char)'B')
-
+#define START_FRAME ((unsigned char)0x00)
+#define DATA_FRAME ((unsigned char)0x01)
+#define END_FRAME ((unsigned char)0x02)
 // Firmware v2 is embedded in bootloader
 // Read up on these symbols in the objcopy man page (if you want)!
 extern int _binary_firmware_bin_start;
@@ -59,6 +63,8 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 
 // Firmware Buffer
 unsigned char data[FLASH_PAGESIZE];
+
+FILE *fptr;
 
 int main(void){
 
@@ -124,7 +130,7 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
     return ciphertext;
 }
 
-void decrypt_aes(char[] data){
+void decrypt_aes(char data[]){
     //read key from file
     fptr = fopen("main.axf", "rb");
     char AES_KEY_A[32];

@@ -61,14 +61,19 @@ if __name__ == "__main__":
     rsapriv = tempkey.export_key() #generates private RSA key
     rsapub = tempkey.publickey().export_key() #generates public RSA key
 
-    open("filename", "w").close() #clears secret_build_output.txt
+    open("secret_build_output.txt", "w").close() #clears secret_build_output.txt
     file = open('secret_build_output.txt', 'w') #opens secret_build_output.txt
-    file.write(aeskey) #writes AES key
+    file.write(aeskey) #writes AES key "secret_build_output.txt"
     file.write('\n')
-    file.write(rsapub) #writes RSA public key
+    file.write(rsapub) #writes RSA public key to "secret_build_output.txt"
     file.write('\n')
-    file.write(rsapriv) #writes RSA private key
+    file.close #closes "secret_build_output.txt"
+
+    open('main.bin', 'w').close()
+    file = open('main.bin', 'w')
+    file.write(aeskey) #writes AES key to "main.bin"
     file.write('\n')
+    file.write(rsapriv) #writes RSA private key to "main.bin"
 
     copy_initial_firmware(firmware_path)
     make_bootloader()

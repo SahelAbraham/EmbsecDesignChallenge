@@ -24,7 +24,7 @@ void load_initial_firmware(void);
 void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-
+void decrypt_aes(char[]);
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
@@ -106,13 +106,13 @@ int main(void){
         }
     }
 }
-void decrypt_aes(char[] data){
+void decrypt_aes(char data[]){
     //read key from file
     fptr = fopen("main.axf", "rb");
     char AES_KEY_A[32];
-    fgets(AES_KEY, 32, fptr);
+    fgets(AES_KEY_A, 32, fptr);
     char AES_KEY_B[32];
-    fgets(AES_KEY, 32, fptr);
+    fgets(AES_KEY_B, 32, fptr);
     fclose(fptr); 
     
     //

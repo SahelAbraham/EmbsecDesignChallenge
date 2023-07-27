@@ -42,16 +42,6 @@ long program_flash(uint32_t, unsigned char *, unsigned int);
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
-<<<<<<< HEAD
-//Defines added
-#define FRAME_START 0
-#define FRAME_DATA 1
-#define FRAME_END 2
-
-#define FRAME_HEADER_SIZE 2
-#define HASH_SIZE 32
-=======
->>>>>>> 790fc2ad67e4f16caa6334e57d389d86dcf72f56
 
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
@@ -100,10 +90,6 @@ int main(void){
     uart_write_str(UART2, "Send \"U\" to update, and \"B\" to run the firmware.\n");
     uart_write_str(UART2, "Writing 0x20 to UART0 will reset the device.\n");
 
-<<<<<<< HEAD
-    
-=======
->>>>>>> 790fc2ad67e4f16caa6334e57d389d86dcf72f56
     int resp;
     while (1){
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
@@ -199,84 +185,6 @@ void load_firmware(void){
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
-<<<<<<< HEAD
-
-
-
-    /* weird ahh code
-    uint8_t data[DATA_SIZE];
-    uint8_t ciphertext[DATA_SIZE];
-    SHA256_CTX sha256_ctx;
-    unsigned char hash[HASH_SIZE];
-    uint8_t frame_type = 0;
-    //waiting for the start frame
-    while(frame_type != FRAME_START){
-        rcv = uart_read(UART1, BLOCKING, &read);
-        frame_type = (uint8_t)rcv;
-    }
-    
-    while (frame_type != FRAME_START){
-
-        //grabbing 2 bytes - (start of frame)
-        rcv = uart_read(UART1, BLOCKING, &read);
-        frame_type =m (uint8_t)rcv;
-
-        //read until...
-        if(frame_type != FRAME_DATA)[
-            SysCtlReset();
-            return;
-        ]
-
-        //compute the hash / get the data frame
-        for(int i = 0; i < DATA_SIZE + FRAME_HEADER_SIZE; i++){
-            rvc = uart_read(UART1, BLOCKING , &read);
-            if(i>= FRAME_HEADER_SIZE){
-                data[data_inex] = (uint8_t)rcv;
-                data_index++;
-            }
-        }
-
-        SHA256_Init(&sha256_ctx);
-        SHA256_Update(&sha256_ctx, data, DATA_SIZE);
-        SHA256_Final(hash, &sha256_ctx);
-
-        // Compare the hash with the last 32 bytes of the data frame
-        int hash_match = 1;
-        for (int i = 0; i < HASH_SIZE; i++) {
-            if (hash[i] != data[DATA_SIZE + i]) {
-                hash_match = 0;
-                break;
-            }
-        }
-
-        // If the hash matches, append the first 256 bytes of the data to the ciphertext buffer
-        if (hash_match) {
-            for (int i = 0; i < DATA_SIZE; i++) {
-                ciphertext[data_index - DATA_SIZE + i] = data[i];
-            }
-        } else {
-            // Terminate if the hash doesn't match.
-            SysCtlReset(); // Reset device
-            return;
-        }
-    }
-    */
-
-    int num_frames = sizeof(cipher_frames) / sizeof(cipher_frames[0]);
-
-    char* ciphertext = compile_ciphertext(cipher_frames, num_frames);
-    if(ciphertext == NULL){
-        printf("Fail\n");
-        return 1;
-    }
-    
-    // Get version as 16 bytes 
-    rcv = uart_read(UART1, BLOCKING, &read);
-    version = (uint32_t)rcv;
-    rcv = uart_read(UART1, BLOCKING, &read);
-    version |= (uint32_t)rcv << 8;
-=======
->>>>>>> 790fc2ad67e4f16caa6334e57d389d86dcf72f56
 
     // Get size as 2 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);

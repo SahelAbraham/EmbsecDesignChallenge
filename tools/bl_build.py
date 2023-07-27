@@ -83,19 +83,21 @@ if __name__ == "__main__":
 
     open(path, 'w').close()
     file = open(path, 'w')
-    file.write('char cbckey[] = {') #writes cbc key to the header file with "C" syntax
+    file.write("#ifndef main.h\n#define main.h\n")
+    file.write('const char cbckey[] = {') #writes cbc key to the header file with "C" syntax
     for x in cbckey:
         file.write('\'')
         file.write(x)
         file.write('\',')
     file.write('};')
     file.write('\n')
-    file.write('char gcmkey[] = {') #writes gcm key to the header file with "C" syntax
+    file.write('const char gcmkey[] = {') #writes gcm key to the header file with "C" syntax
     for x in gcmkey:
         file.write('\'')
         file.write(x)
         file.write('\',')
-    file.write('};')
+    file.write('};\n')
+    file.write("#endif")
     file.close()
 
     copy_initial_firmware(firmware_path)

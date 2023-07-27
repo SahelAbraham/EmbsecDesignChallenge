@@ -79,11 +79,11 @@ if __name__ == "__main__":
     currentpath = os.path.realpath(__file__)
     dir = os.path.dirname(currentpath)
     dir = dir.replace('tools', 'bootloader')
-    path = os.path.join(dir, 'src', 'main.h')
+    path = os.path.join(dir, 'src', 'bootloader_secrets.h')
 
     open(path, 'w').close()
     file = open(path, 'w')
-    file.write("#ifndef main.h\n#define main.h\n")
+    file.write("#ifndef main.h\n#define bootloader_secrets.h\n")
     file.write('const char cbckey[] = {') #writes cbc key to the header file with "C" syntax
     for x in cbckey:
         file.write('\'')

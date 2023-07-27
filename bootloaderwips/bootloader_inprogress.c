@@ -184,7 +184,7 @@ void decrypt_aes(char* initial_data){
     }
     char aad[16];//aad iv made using pycryptodome
     char tag[128];
-    gcm_decrypt_and_verify(aes_key1, nonce, data, strlen(data), aad, strlen(aad), tag);
+    gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC
     char iv[16];
@@ -192,7 +192,7 @@ void decrypt_aes(char* initial_data){
     {
         iv[i] = iv[FLASH_PAGESIZE+i];
     }
-    aes_decrypt(aes_key1, iv_cbc, data, strlen(data));
+    aes_decrypt(cbckey, iv_cbc, data, strlen(data));
     
     int count;
     char fw_size[2];

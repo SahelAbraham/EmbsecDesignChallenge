@@ -190,8 +190,14 @@ void decrypt_aes(char* initial_data){
     {
         nonce[i] = data[FLASH_PAGESIZE+i];
     }
-    char aad[16];//aad iv made using pycryptodome
+    char aad[16];//aad iv is created like a key so it is in the secret file
+    
     char tag[128];
+    for (size_t i = 0; i < 128; i++)
+    {
+        tag[i] = data[FLASH_PAGESIZE+i];
+    }
+
     gcm_decrypt_and_verify(AES_KEY_A, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC

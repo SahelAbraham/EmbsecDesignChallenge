@@ -44,6 +44,7 @@
 #include <stdlib.h>
 // Application Imports
 #include "uart.h"
+#include "bootloader_secrets.h"
 
 // Forward Declarations
 void load_initial_firmware(void);

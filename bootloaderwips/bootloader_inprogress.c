@@ -1,11 +1,28 @@
 // Copyright 2023 The MITRE Corporation. ALL RIGHTS RESERVED
 // Approved for public release. Distribution unlimited 23-02181-13.
-
-
 /*
-################  ORIGINAL INSECURE BOOTLOADER CODE - DO NOT USE  ######################
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣤⣤⣤⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⡿⠛⠉⠙⠛⠛⠛⠛⠻⢿⣿⣷⣤⡀⠀⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⠋⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠈⢻⣿⣿⡄⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣸⣿⡏⠀⠀⠀⣠⣶⣾⣿⣿⣿⠿⠿⠿⢿⣿⣿⣿⣄⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠁⠀⠀⢰⣿⣿⣯⠁⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣷⡄⠀ 
+⠀⠀⣀⣤⣴⣶⣶⣿⡟⠀⠀⠀⢸⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣷⠀ 
+⠀⢰⣿⡟⠋⠉⣹⣿⡇⠀⠀⠀⠘⣿⣿⣿⣿⣷⣦⣤⣤⣤⣶⣶⣶⣶⣿⠀ 
+⠀⢸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀ 
+⠀⣸⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠉⠻⠿⣿⣿⣿⣿⡿⠿⠿⠛⢻⠀⠀ 
+⠀⣿⣿⠁⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣧⠀⠀ 
+⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀ 
+⠀⣿⣿⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀ 
+⠀⢿⣿⡆⠀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡇⠀⠀ 
+⠀⠸⣿⣧⡀⠀⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⠃⠀⠀ 
+⠀⠀⠛⢿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⣰⣿⣿⣷⣶⣶⣶⣶⢠ ⣿⣿⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⣽⣿⡏⠁⠀⠀⢸⣿⡇⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⣿⣿⠀⠀⠀⠀⠀⣿⣿⡇⠀⢹⣿⡆⠀⠀⠀ ⣸⣿⠇⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⢿⣿⣦⣄⣀⣠⣴⣿⣿⠁⠀⠈⠻⣿⣿⣿⣿⡿⠏⠀⠀⠀⠀ 
+⠀⠀⠀⠀⠀⠀⠀⠈⠛⠻⠿⠿⠿⠿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 */
 
+//################  ALL CURRENT BOOTLOADER PROGRESS - MAY NOT WORK  ######################
 
 //Includes 
 #include <stdbool.h>
@@ -25,8 +42,6 @@
 #include <beaverssl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h>
-
 // Application Imports
 #include "uart.h"
 
@@ -35,22 +50,30 @@ void load_initial_firmware(void);
 void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
+void decrypt_aes(char*);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
+//Defines added
+#define FRAME_START 0
+#define FRAME_DATA 1
+#define FRAME_END 2
 
+#define FRAME_HEADER_SIZE 2
+#define HASH_SIZE 32
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
-#define MAX_FW 30000
 
 // Protocol Constants
 #define OK ((unsigned char)0x00)
 #define ERROR ((unsigned char)0x01)
 #define UPDATE ((unsigned char)'U')
 #define BOOT ((unsigned char)'B')
-
+#define START_FRAME ((unsigned char)0x00)
+#define DATA_FRAME ((unsigned char)0x01)
+#define END_FRAME ((unsigned char)0x02)
 // Firmware v2 is embedded in bootloader
 // Read up on these symbols in the objcopy man page (if you want)!
 extern int _binary_firmware_bin_start;
@@ -63,7 +86,10 @@ uint8_t *fw_release_message_address;
 void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 
 // Firmware Buffer
-unsigned char data[MAX_FW];
+unsigned char* data;
+
+
+FILE *fptr;
 
 int main(void){
 
@@ -101,6 +127,161 @@ int main(void){
         }
     }
 }
+/*
+//Compile back to cipher text 
+char* compile_ciphertext(char** cipher_frames, int num_frames){
+    int total_length = 0; 
+    for(int i = 0; i < num_frames){
+        total_length += strlen(cipher_frames[i]);
+    }
+
+    char* ciphertext = (char*)malloc(total_length+1);
+    if(ciphertext == NULL){
+        return NULL;
+    }
+
+    int offset = 0; 
+    for(int i = 0; i < num_frames; i++){
+        strcpy(ciphertext + offset. cipher_frames[i]);
+        offset += strlen(cipher_frames[i]);
+    }
+    return ciphertext;
+}
+*/
+
+void decrypt_aes(char* initial_data){
+    //read key from file
+    fptr = fopen("main.axf", "rb");
+    char AES_KEY_A[32];
+    fgets(AES_KEY_A, 32, fptr);
+    char AES_KEY_B[32];
+    fgets(AES_KEY_B, 32, fptr);
+    fclose(fptr); 
+    
+    //maybe need to initialize hash parameters
+    /*
+    ;1. decrypt A 
+    2. extract IV (16 bytes)
+    3. decrypt B
+    4. append data to perform checks
+    */
+    
+    // br_gcm_context gcm_context;
+    // br_block_ctr_class ctr_class;
+    // br_ghash gcm_hash;
+    // br_gcm_init(&gcm_context, &ctr_class, gcm_hash);
+    // // br_gcm_reset(&gcm_context, AES_KEY_A, strlen(AES_KEY_A));
+    // br_gcm_run(&gcm_context, 0, data, strlen(data));
+
+    // br_aes_ct_cbcdec_keys cbc_context;
+    // br_aes_ct_cbcdec_init(&cbc_context, AES_KEY_B, strlen(AES_KEY_B));
+    
+    // : change from bearssl to beaver ssl 
+    data[strlen(initial_data)];
+    for (size_t i = 0; i < strlen(initial_data); i++)
+    {
+        data[i] = initial_data[i];
+    }
+    
+
+    char nonce[16];
+    for (size_t i = 0; i < 16; i++)
+    {
+        nonce[i] = data[FLASH_PAGESIZE+i];
+    }
+    char aad[16];//aad iv made using pycryptodome
+    char tag[128];
+    gcm_decrypt_and_verify(AES_KEY_A, nonce, data, strlen(data), aad, strlen(aad), tag);
+    
+    //AES-CBC
+    char iv[16];
+    for (size_t i = 0; i < 16; i++)
+    {
+        iv[i] = iv[FLASH_PAGESIZE+i];
+    }
+    aes_decrypt(AES_KEY_B, iv_cbc, data, strlen(data));
+
+    int count;
+    char fw_size[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        fw_size[i] = data[i];
+    }
+    uint16_t fw_size_int = fw_size[0] + (fw_size[1] << 8);
+    
+    count += 2;
+    char fw_ver[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        fw_ver[i] = data[i];
+    }
+
+    count += 2;
+    char msg_size[2];
+    for (size_t i = count; i < count+2; i++)
+    {
+        msg_size[i] = data[i];
+    }
+
+    count += 2;
+    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
+    char msg_data[msg_size_int];
+    for (size_t i = count; i < count+msg_size_int; i++)
+    {
+        msg_data[i] = data[i];
+    }
+    
+    count += msg_size_int;
+    char fw_data[fw_size_int];
+    for (size_t i = count; i < count+fw_size_int; i++)
+    {
+        fw_data[i] = data[i];
+    }
+    
+    count+=fw_size_int;
+    char hash[32];
+    for (size_t i = count; i < count+32; i++)
+    {
+        hash[i] = data[i];
+    }
+
+    count += 32;
+    char iv[16];
+    for (size_t i = count; i < count+16; i++)
+    {
+        hash[i] = data[i];
+    }
+    
+}
+
+// CHECK SUM 
+unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
+    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
+
+    // Calculate checksum each custom algorithm
+    for (uint32_t i = 0; i < data_len; i++) {
+        if (i == 0 , i == 1 , i == 2) {
+            continue; // Skip the start delimiter and length bytes
+        }
+        checksum += data[i];
+    }
+
+    return (unsigned char)(checksum & 0xFF); // Keep only the lowest 8 bits
+}
+
+//verifying if checksum for frames are correct
+bool verify_frame(const unsigned char* frame_data, uint32_t frame_len){
+    if (frame_len < 2) {
+        return false;//we return false because frame is too small for checksum
+    }
+
+    //checks the payload
+    unsigned char calculate_checksum = calculate_custom_checksum(frame_data, frame_len-1);
+
+    //check the last digit
+    return (calculate_checksum == frame_data[frame_len - 1]);
+}
+
 
 /*
  * Load initial firmware into flash
@@ -172,6 +353,11 @@ void load_initial_firmware(void){
 
 /*
  * Load the firmware into flash.
+ * Receieve all frames
+ * Decrypt with GCM
+ * Get version , size, message, iv
+ * Decrypt rest with CBC
+ * Get firmware and hash
  */
 void load_firmware(void){
     int frame_length = 0;
@@ -183,7 +369,7 @@ void load_firmware(void){
     uint32_t version = 0;
     uint32_t size = 0;
 
-    // Get size as 2 bytes 
+    // Get size as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
@@ -233,17 +419,9 @@ void load_firmware(void){
         } 
 
         uart_write(UART1, OK); // Acknowledge the frame.
-    }                      
+    }                          // while(1)
 }
 
-/*
- * Program a stream of bytes to the flash.
- * This function takes the starting address of a 1KB page, a pointer to the
- * data to write, and the number of byets to write.
- *
- * This functions performs an erase of the specified flash page before writing
- * the data.
- */
 long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_len){
     uint32_t word = 0;
     int ret;

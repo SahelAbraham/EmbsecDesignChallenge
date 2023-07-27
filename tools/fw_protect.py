@@ -16,6 +16,7 @@ from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util.Padding import pad
+from pwn import p16
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
@@ -25,6 +26,8 @@ def protect_firmware(infile, outfile, version, message):
 
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
+    version_pack = p16(version, endian = "little")
+    length_pack = p16(len(firmware), endian = "little")
 
     # Hash the firmware using SHA-256
     hash = SHA256.new()
@@ -44,17 +47,18 @@ def protect_firmware(infile, outfile, version, message):
     
     # Make an IV
     aes_cbc_iv = os.urandom(16) 
+    aes_gcm_nonce = os.urandom(16) 
 
     # Encrypt firmware + hash with AES-CBC
     firmware_hash = firmware + bytes(firmware_hash,encoding = 'utf8')
     cipher = AES.new(aes_key1, AES.MODE_CBC,iv=aes_cbc_iv)
     ciphertext = cipher.encrypt(pad(firmware_hash,16))
 
-    # Encrypt metadata + message + previous message + CBC_IV with AES-GCM
-    ciphertext_all = metadata + message.encode() + ciphertext + firmware + aes_cbc_iv
-    cipher = AES.new(aes_key2, AES.MODE_GCM)
+    # Encrypt version + message + previous message + CBC_IV with AES-GCM
+    ciphertext_all = version_pack + message.encode() + ciphertext + firmware + aes_cbc_iv + aes_gcm_nonce
+    cipher = AES.new(aes_key2, AES.MODE_GCM, nonce = aes_gcm_nonce)
     
-    ciphertext_final= cipher.encrypt(pad(ciphertext_all,16))
+    ciphertext_final= length_pack+cipher.encrypt(pad(ciphertext_all,16))
 
     # Write firmware blob to outfile
     with open(outfile, 'wb+') as outfile:
@@ -75,6 +79,6 @@ if __name__ == '__main__':
 
 
 
-                  # verison size message        firmware , hash 0x20 , CBC_IV 0x10
- #Encrypt1                                      #AES_CBC ENCRYPTION#                       #Decrypt2
- #Encrypt2       ####################### AES_GCM #################################         #Decrypt1
+                  # size verison message        firmware , hash 0x20 , CBC_IV 0x10, GCM_Nonce
+ #Encrypt1                                      #AES_CBC ENCRYPTION#                                #Decrypt2
+ #Encrypt2               ############### AES_GCM #################################                  #Decrypt1

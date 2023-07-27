@@ -2,6 +2,8 @@
     "files.associations": {
         "stdbool.h": "c",
         "hw_memmap.h": "c",
-        "interrupt.h": "c"
+        "interrupt.h": "c",
+        "beaverssl.h": "c",
+        "stdio.h": "c"
     }
 }

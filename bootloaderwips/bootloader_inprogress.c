@@ -44,7 +44,6 @@
 #include <stdlib.h>
 // Application Imports
 #include "uart.h"
-#include "bootloader_secrets.h"
 
 // Forward Declarations
 void load_initial_firmware(void);
@@ -187,10 +186,10 @@ void decrypt_aes(char* initial_data){
     gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC
-    char iv_cbc[16];
+    char iv[16];
     for (size_t i = 0; i < 16; i++)
     {
-        iv_cbc[i] = iv_cbc[FLASH_PAGESIZE+i];
+        iv[i] = iv[FLASH_PAGESIZE+i];
     }
     aes_decrypt(cbckey, iv_cbc, data, strlen(data));
     

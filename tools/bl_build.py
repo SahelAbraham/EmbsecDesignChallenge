@@ -79,7 +79,7 @@ if __name__ == "__main__":
     currentpath = os.path.realpath(__file__)
     dir = os.path.dirname(currentpath)
     dir = dir.replace('tools', 'bootloader')
-    path = os.path.join(dir, 'src', 'bootloader_secrets.h')
+    path = os.path.join(dir, 'src', 'main.h')
 
     open(path, 'w').close()
     file = open(path, 'w')
@@ -96,8 +96,7 @@ if __name__ == "__main__":
         file.write('\'')
         file.write(x)
         file.write('\',')
-    file.write('};\n')
-    file.write("#endif")
+    file.write('};')
     file.close()
 
     copy_initial_firmware(firmware_path)

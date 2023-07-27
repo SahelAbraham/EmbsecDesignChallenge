@@ -20,6 +20,9 @@
 #include "driverlib/sysctl.h"    // System control API (clock/reset)
 #include "driverlib/interrupt.h" // Interrupt API
 
+// Beaver SSL
+#include <beaverssl.h>
+
 // Library Imports
 #include <string.h>
 #include <beaverssl.h>

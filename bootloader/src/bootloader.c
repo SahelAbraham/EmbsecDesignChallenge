@@ -147,17 +147,19 @@ void decrypt_aes(char* data){
     4. append data to perform checks
     */
     
-    br_gcm_context gcm_context;
-    br_block_ctr_class ctr_class;
-    br_ghash gcm_hash;
-    br_gcm_init(&gcm_context, &ctr_class, gcm_hash);
-    // br_gcm_reset(&gcm_context, AES_KEY_A, strlen(AES_KEY_A));
-    br_gcm_run(&gcm_context, 0, data, strlen(data));
+    // br_gcm_context gcm_context;
+    // br_block_ctr_class ctr_class;
+    // br_ghash gcm_hash;
+    // br_gcm_init(&gcm_context, &ctr_class, gcm_hash);
+    // // br_gcm_reset(&gcm_context, AES_KEY_A, strlen(AES_KEY_A));
+    // br_gcm_run(&gcm_context, 0, data, strlen(data));
 
-    br_aes_ct_cbcdec_keys cbc_context;
-    br_aes_ct_cbcdec_init(&cbc_context, AES_KEY_B, strlen(AES_KEY_B));
+    // br_aes_ct_cbcdec_keys cbc_context;
+    // br_aes_ct_cbcdec_init(&cbc_context, AES_KEY_B, strlen(AES_KEY_B));
+    
+    // WIP: change from bearssl to beaver ssl gcm_decrypt_and_verify(char* key, char* iv, char* ct, int ct_len, char* aad, int aad_len, char* tag);
 
-    // aes_decrypt(AES_KEY_B, IV, data, 256);
+    aes_decrypt(AES_KEY_B, IV, data, 256);
     
 
     int count;

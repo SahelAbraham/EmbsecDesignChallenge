@@ -2,8 +2,12 @@
     "files.associations": {
         "stdbool.h": "c",
         "hw_memmap.h": "c",
+<<<<<<< HEAD
+        "beaverssl.h": "c"
+=======
         "interrupt.h": "c",
         "beaverssl.h": "c",
         "stdio.h": "c"
+>>>>>>> 790fc2ad67e4f16caa6334e57d389d86dcf72f56
     }
 }

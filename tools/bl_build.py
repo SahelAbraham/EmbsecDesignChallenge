@@ -14,10 +14,10 @@ import os
 import pathlib
 import shutil
 import subprocess
+import string
+import secrets
 
-from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
-from Crypto.PublicKey import RSA
 
 REPO_ROOT = pathlib.Path(__file__).parent.parent.absolute()
 BOOTLOADER_DIR = os.path.join(REPO_ROOT, "bootloader")
@@ -56,21 +56,47 @@ if __name__ == "__main__":
         raise FileNotFoundError(
             f'ERROR: {firmware_path} does not exist or is not a file. You may have to call "make" in the firmware directory.'
         )
-    gcmkey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key for GCM
-    cbckey = get_random_bytes(32) #generates new, randomly generated 32 byte AES key for CBC
+    
+    gcmkey = []
+    cbckey = []
 
-    open("secret_build_output.txt", "w").close() #clears secret_build_output.txt
-    file = open('secret_build_output.txt', 'w') #opens secret_build_output.txt
-    file.write(cbckey) #writes AES key "secret_build_output.txt"
+    for i in range(32):
+        gcmkey.append(''.join(secrets.choice(string.ascii_letters + string.digits + '~!@#$%^&*()_+=_{[]}|"/.,')))
+        cbckey.append(''.join(secrets.choice(string.ascii_letters + string.digits + '~!@#$%^&*()_+=_{[]}|"/.,')))
+
+    currentpath = os.path.realpath(__file__)
+    path = os.path.join(os.path.dirname(currentpath), 'secret_build_output.txt')
+
+    open(path, "w").close() #clears secret_build_output.txt
+    file = open(path, 'w') #opens secret_build_output.txt
+    for x in cbckey: #writes cbckey to secret_build_output.txt
+        file.write(x)
     file.write('\n')
-    file.write(gcmkey)
+    for x in gcmkey: #writes gcmkey to secret_build_output.txt
+        file.write(x)
     file.close #closes "secret_build_output.txt"
 
-    open('main.bin', 'w').close()
-    file = open('main.bin', 'w')
-    file.write(gcmkey) #writes AES key to "main.bin"
+    currentpath = os.path.realpath(__file__)
+    dir = os.path.dirname(currentpath)
+    dir = dir.replace('tools', 'bootloader')
+    path = os.path.join(dir, 'src', 'main.h')
+
+    open(path, 'w').close()
+    file = open(path, 'w')
+    file.write('char cbckey[] = {') #writes cbc key to the header file with "C" syntax
+    for x in cbckey:
+        file.write('\'')
+        file.write(x)
+        file.write('\',')
+    file.write('};')
     file.write('\n')
-    file.write(cbckey) #writes RSA private key to "main.bin"
+    file.write('char gcmkey[] = {') #writes gcm key to the header file with "C" syntax
+    for x in gcmkey:
+        file.write('\'')
+        file.write(x)
+        file.write('\',')
+    file.write('};')
+    file.close()
 
     copy_initial_firmware(firmware_path)
     make_bootloader()

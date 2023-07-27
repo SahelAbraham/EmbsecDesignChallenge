@@ -68,9 +68,9 @@ if __name__ == "__main__":
 
     open('main.bin', 'w').close()
     file = open('main.bin', 'w')
-    file.write(aeskey) #writes AES key to "main.bin"
+    file.write(gcmkey) #writes AES key to "main.bin"
     file.write('\n')
-    file.write(rsapriv) #writes RSA private key to "main.bin"
+    file.write(cbckey) #writes RSA private key to "main.bin"
 
     copy_initial_firmware(firmware_path)
     make_bootloader()

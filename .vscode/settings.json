@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "stdbool.h": "c",
-        "hw_memmap.h": "c"
+        "hw_memmap.h": "c",
+        "interrupt.h": "c"
     }
 }

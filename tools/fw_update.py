@@ -70,15 +70,16 @@ def send_frame(ser, frame, debug=False):
     ser.write(frame)  # Write the frame...
 
     if debug:
-        print_hex(frame)
+        print(len(frame))
     
     for i in range (len(frame)):
         checksum+=frame[i]
     hash = SHA256.new()
     hash.update(bytes(checksum))
-    hashed_checksum = bytes(hash.hexdigest(),encoding = 'utf8')
-    print(hashed_checksum)
+    hashed_checksum = bytes(hash.digest())
     ser.write(hashed_checksum)
+    if debug:
+        print(len(hashed_checksum))
     resp = ser.read(1)  # Wait for an OK from the bootloader
 
     time.sleep(0.1)
@@ -94,11 +95,19 @@ def update(ser, infile, debug):
     # Open serial port. Set baudrate to 115200. Set timeout to 2 seconds.
     with open(infile, "rb") as fp:
         all_data = fp.read()
+    size = all_data[:2]
+    data_to_send = all_data[2:]
+    ser.write(b"U")
 
+    print("Waiting for bootloader to enter update mode...")
+    while ser.read(1).decode() != "U":
+        print("got a byte")
+        pass
+    print("Writing Size")
+    ser.write(size)
     print("Writing firmware.")
-    ser.write(p16(0,endian = "little"))
-    for idx, frame_start in enumerate(range(0, len(all_data), FRAME_SIZE)):
-        data = all_data[frame_start : frame_start + FRAME_SIZE]
+    for idx, frame_start in enumerate(range(0, len(data_to_send), FRAME_SIZE)):
+        data = data_to_send[frame_start : frame_start + FRAME_SIZE]
 
         # Get length of data.
         length = len(data)
@@ -109,7 +118,6 @@ def update(ser, infile, debug):
 
         send_frame(ser, frame, debug=debug)
         print(f"Wrote frame {idx} ({len(frame)} bytes)")
-    ser.write(p16(2,endian = "little"))
 
     print("Done writing firmware.")
 
@@ -177,7 +185,7 @@ def update_default(ser, infile, debug):
     send_metadata(ser, metadata, debug=debug)
 
     for idx, frame_start in enumerate(range(0, len(firmware), FRAME_SIZE)):
-        data = firmware[frame_start : frame_start + FRAME_SIZE]
+        data = firmware[frame_start : frame_start + FRAME_SIZE ]
 
         # Get length of data.
         length = len(data)
@@ -230,3 +238,14 @@ if __name__ == "__main__":
     update(ser=uart1, infile=args.firmware, debug=args.debug)
 
     uart1_sock.close()
+
+
+#U
+#<-                       #U
+#                         #load_firmware()
+#SIZE
+#LOOP
+    #1
+    #DATA256   
+    #<-                       #OK
+#0 length frame

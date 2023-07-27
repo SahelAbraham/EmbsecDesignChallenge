@@ -195,13 +195,13 @@ void decrypt_aes(char* initial_data){
     gcm_decrypt_and_verify(AES_KEY_A, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC
-    char iv[16];
+    char iv_cbc[16];
     for (size_t i = 0; i < 16; i++)
     {
-        iv[i] = iv[FLASH_PAGESIZE+i];
+        iv_cbc[i] = iv_cbc[FLASH_PAGESIZE+i];
     }
     aes_decrypt(AES_KEY_B, iv_cbc, data, strlen(data));
-
+    
     int count;
     char fw_size[2];
     for (size_t i = count; i < count+2; i++)

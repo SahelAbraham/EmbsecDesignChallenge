@@ -224,12 +224,22 @@ void load_firmware(void){
         for (int i = 0; i < frame_length; ++i){
             data[data_index] = uart_read(UART1, BLOCKING, &read);
             data_index += 1;
+            if(data_index>=sizeof(data)){
+                uart_write(UART1, ERROR); // Reject the metadata.
+                SysCtlReset();            // Reset device
+                return;
+            }
         } 
 
         // Get the 32 length checksum
         for (int i = 0; i < 32; ++i){
             data[data_index] = uart_read(UART1, BLOCKING, &read);
             data_index += 1;
+            if(data_index>=sizeof(data)){
+                uart_write(UART1, ERROR); // Reject the metadata.
+                SysCtlReset();            // Reset device
+                return;
+            }
         } 
 
         uart_write(UART1, OK); // Acknowledge the frame.

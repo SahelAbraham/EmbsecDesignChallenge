@@ -13,6 +13,9 @@
 #include "driverlib/sysctl.h"    // System control API (clock/reset)
 #include "driverlib/interrupt.h" // Interrupt API
 
+// Beaver SSL
+#include <beaverssl.h>
+
 // Library Imports
 #include <string.h>
 
@@ -35,7 +38,7 @@ long program_flash(uint32_t, unsigned char *, unsigned int);
 
 #define FRAME_HEADER_SIZE 2
 #define HASH_SIZE 32
-#define DATA_SIZE 256
+
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
@@ -82,13 +85,6 @@ int main(void){
     uart_write_str(UART2, "Send \"U\" to update, and \"B\" to run the firmware.\n");
     uart_write_str(UART2, "Writing 0x20 to UART0 will reset the device.\n");
 
-    int num_frames = sizeof(cipher_frames) / sizeof(cipher_frames[0]);
-
-    char* ciphertext = compile_ciphertext(cipher_frames, num_frames);
-    if(ciphertext == NULL){
-        printf("Fail\n");
-        return 1;
-    }
     
     int resp;
     while (1){
@@ -298,7 +294,10 @@ void load_firmware(void){
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
-    
+
+
+
+    /* weird ahh code
     uint8_t data[DATA_SIZE];
     uint8_t ciphertext[DATA_SIZE];
     SHA256_CTX sha256_ctx;
@@ -355,7 +354,15 @@ void load_firmware(void){
             return;
         }
     }
+    */
 
+    int num_frames = sizeof(cipher_frames) / sizeof(cipher_frames[0]);
+
+    char* ciphertext = compile_ciphertext(cipher_frames, num_frames);
+    if(ciphertext == NULL){
+        printf("Fail\n");
+        return 1;
+    }
     
     // Get version as 16 bytes 
     rcv = uart_read(UART1, BLOCKING, &read);

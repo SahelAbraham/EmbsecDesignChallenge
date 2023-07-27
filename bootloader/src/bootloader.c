@@ -117,7 +117,7 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
         total_length += strlen(cipher_frames[i]);
     }
 
-    char* ciphertext = (char*)malloc(total_lenght+1);
+    char* ciphertext = (char*)malloc(total_length+1);
     if(ciphertext == NULL)[
         return NULL;
     ]
@@ -130,7 +130,7 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
     return ciphertext;
 }
 
-void decrypt_aes(char data[]){
+void decrypt_aes(char* data){
     //read key from file
     fptr = fopen("main.axf", "rb");
     char AES_KEY_A[32];
@@ -139,9 +139,25 @@ void decrypt_aes(char data[]){
     fgets(AES_KEY_B, 32, fptr);
     fclose(fptr); 
     
-    //
-    aes_decrypt(AES_KEY_A, IV, data, 256);
-    aes_decrypt(AES_KEY_B, IV, data, 256);
+    //maybe need to initialize hash parameters
+    /*
+    ;1. decrypt A 
+    2. extract IV (16 bytes)
+    3. decrypt B
+    4. append data to perform checks
+    */
+    
+    br_gcm_context gcm_context;
+    br_block_ctr_class ctr_class;
+    br_ghash gcm_hash;
+    br_gcm_init(&gcm_context, &ctr_class, gcm_hash);
+    // br_gcm_reset(&gcm_context, AES_KEY_A, strlen(AES_KEY_A));
+    br_gcm_run(&gcm_context, 0, data, strlen(data));
+
+    br_aes_ct_cbcdec_keys cbc_context;
+    br_aes_ct_cbcdec_init(&cbc_context, AES_KEY_B, strlen(AES_KEY_B));
+
+    // aes_decrypt(AES_KEY_B, IV, data, 256);
     
 
     int count;
@@ -320,7 +336,7 @@ void load_firmware(void){
 
         //grabbing 2 bytes - (start of frame)
         rcv = uart_read(UART1, BLOCKING, &read);
-        frame_type =m (uint8_t)rcv;
+        frame_type =(uint8_t)rcv;
 
         //read until...
         if(frame_type != FRAME_DATA)[

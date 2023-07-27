@@ -35,15 +35,10 @@ def protect_firmware(infile, outfile, version, message):
     firmware_hash = hash.hexdigest()
 
     # Load secrets for encryption and signing
-    with open("secret_build_output.txt", 'r') as secrets_fp:
-        secrets = secrets_fp.read()
-
-    # Splits the keys with the new line ther are index 0 - AES key, 1- RSA Private Key, 2- RSA Public Key
-    secrets = secrets.split('\n\n')
-
-    # Assign the 0,1 index in secrets to aes_key
-    aes_key1 = bytes(secrets[0], encoding = 'utf8')
-    aes_key2 = bytes(secrets[1], encoding = 'utf8')
+    with open("secret_build_output.txt", 'rb') as secrets_fp:
+        aes_key1 = secrets_fp.readline() #pulls cbc key from file
+        aes_key2 = secrets_fp.readline() #pulls gcm key from file
+        aes_key1 = aes_key1[0:-1] #drops newline character
     
     # Make an IV
     aes_cbc_iv = os.urandom(16) 

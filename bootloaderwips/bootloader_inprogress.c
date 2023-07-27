@@ -151,14 +151,6 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
 */
 
 void decrypt_aes(char* initial_data){
-    //read key from file
-    fptr = fopen("main.axf", "rb");
-    char AES_KEY_A[32];
-    fgets(AES_KEY_A, 32, fptr);
-    char AES_KEY_B[32];
-    fgets(AES_KEY_B, 32, fptr);
-    fclose(fptr); 
-    
     //maybe need to initialize hash parameters
     /*
     ;1. decrypt A 
@@ -171,11 +163,11 @@ void decrypt_aes(char* initial_data){
     // br_block_ctr_class ctr_class;
     // br_ghash gcm_hash;
     // br_gcm_init(&gcm_context, &ctr_class, gcm_hash);
-    // // br_gcm_reset(&gcm_context, AES_KEY_A, strlen(AES_KEY_A));
+    // // br_gcm_reset(&gcm_context, gcmkey, strlen(gcmkey));
     // br_gcm_run(&gcm_context, 0, data, strlen(data));
 
     // br_aes_ct_cbcdec_keys cbc_context;
-    // br_aes_ct_cbcdec_init(&cbc_context, AES_KEY_B, strlen(AES_KEY_B));
+    // br_aes_ct_cbcdec_init(&cbc_context, cbckey, strlen(cbckey));
     
     // : change from bearssl to beaver ssl 
     data[strlen(initial_data)];
@@ -192,7 +184,7 @@ void decrypt_aes(char* initial_data){
     }
     char aad[16];//aad iv made using pycryptodome
     char tag[128];
-    gcm_decrypt_and_verify(AES_KEY_A, nonce, data, strlen(data), aad, strlen(aad), tag);
+    gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC
     char iv_cbc[16];
@@ -200,7 +192,7 @@ void decrypt_aes(char* initial_data){
     {
         iv_cbc[i] = iv_cbc[FLASH_PAGESIZE+i];
     }
-    aes_decrypt(AES_KEY_B, iv_cbc, data, strlen(data));
+    aes_decrypt(cbckey, iv_cbc, data, strlen(data));
     
     int count;
     char fw_size[2];

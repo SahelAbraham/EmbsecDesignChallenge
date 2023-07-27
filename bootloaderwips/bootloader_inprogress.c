@@ -200,7 +200,7 @@ void decrypt_aes(char* initial_data){
         iv[i] = iv[FLASH_PAGESIZE+i];
     }
     aes_decrypt(AES_KEY_B, iv_cbc, data, strlen(data));
-
+    
     int count;
     char fw_size[2];
     for (size_t i = count; i < count+2; i++)

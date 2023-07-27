@@ -64,6 +64,8 @@ if __name__ == "__main__":
         gcmkey.append(''.join(secrets.choice(string.ascii_letters + string.digits + '~!@#$%^&*()_+=_{[]}|"/.,')))
         cbckey.append(''.join(secrets.choice(string.ascii_letters + string.digits + '~!@#$%^&*()_+=_{[]}|"/.,')))
 
+    AAD = "AccordingtoallknownlawsofaviationthereisnowayabeeshouldbeabletoflyItswingsaretoosmalltogetitsfatlittlebodyoffthegroundThebeeofcoursefliesanywaybecausebeesdontcarewhathumansthink"
+
     currentpath = os.path.realpath(__file__)
     path = os.path.join(os.path.dirname(currentpath), 'secret_build_output.txt')
 
@@ -74,12 +76,14 @@ if __name__ == "__main__":
     file.write('\n')
     for x in gcmkey: #writes gcmkey to secret_build_output.txt
         file.write(x)
+    file.write('\n')
+    file.write(AAD)
     file.close #closes "secret_build_output.txt"
 
     currentpath = os.path.realpath(__file__)
     dir = os.path.dirname(currentpath)
     dir = dir.replace('tools', 'bootloader')
-    path = os.path.join(dir, 'src', 'main.h')
+    path = os.path.join(dir, 'src', 'bootloader_secret.h')
 
     open(path, 'w').close()
     file = open(path, 'w')
@@ -97,6 +101,14 @@ if __name__ == "__main__":
         file.write(x)
         file.write('\',')
     file.write('};')
+    file.write('\n')
+    file.write('const char aad[177] = {') #writes AAD to the header file with "C" syntax
+    for x in AAD:
+        file.write('\'')
+        file.write(x)
+        file.write('\',')
+    file.write('};')
+    file.write("\n#endif")
     file.close()
 
     copy_initial_firmware(firmware_path)

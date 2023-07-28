@@ -193,10 +193,10 @@ void decrypt_aes(char* initial_data){
     gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC
-    char iv[16];
+    char iv_cbc[16];
     for (size_t i = 0; i < 16; i++)
     {
-        iv[i] = iv[FLASH_PAGESIZE+i];
+        iv_cbc[i] = iv_cbc[FLASH_PAGESIZE+i];
     }
     aes_decrypt(cbckey, iv_cbc, data, strlen(data));
     

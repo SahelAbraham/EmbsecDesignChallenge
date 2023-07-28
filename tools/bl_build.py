@@ -83,7 +83,6 @@ if __name__ == "__main__":
     currentpath = os.path.realpath(__file__)
     dir = os.path.dirname(currentpath)
     dir = dir.replace('tools', 'bootloader')
-    path = os.path.join(dir, 'src', 'bootloader_secret.h')
     path = os.path.join(dir, 'src', 'bootloader_secrets.h')
 
     open(path, 'w').close()

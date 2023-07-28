@@ -31,8 +31,8 @@ def protect_firmware(infile, outfile, version, message):
 
     # Hash the firmware using SHA-256
     hash = SHA256.new()
-    hash.update(metadata+message.encode()+firmware)
-    firmware_hash = hash.hexdigest()
+    hash.update(firmware)
+    firmware_hash = bytes(hash.digest())
 
     # Load secrets for encryption and signing
     with open("secret_build_output.txt", 'rb') as secrets_fp:
@@ -40,18 +40,18 @@ def protect_firmware(infile, outfile, version, message):
         aes_key2 = secrets_fp.readline() #pulls gcm key from file
         gcm_aad = secrets_fp.readline() #pulls aad from file
 
-        aad = secrets_fp.readline()
         aes_key1 = aes_key1[0:-1] #drops newline character
         aes_key2 = aes_key2[0:-1] #drops newline character
-        gcm_aad = gcm_aad[0:-1]
     # Make an IV
     aes_cbc_iv = os.urandom(16) 
     aes_gcm_nonce = os.urandom(16) #for aes gcm 
 
     # Encrypt firmware + hash with AES-CBC
-    firmware_hash = firmware + bytes(firmware_hash,encoding = 'utf8')
+    firmware_all= firmware + firmware_hash
     cipher = AES.new(aes_key1, AES.MODE_CBC,iv=aes_cbc_iv)
-    ciphertext = cipher.encrypt(pad(firmware_hash,16))
+    if len(firmware_all)%16 !=0:
+        firmware_all = pad(firmware_all,16)
+    ciphertext = cipher.encrypt(firmware_all)
 
     # Encrypt version + message + previous message + CBC_IV with AES-GCM
     cipher = AES.new(aes_key2, AES.MODE_GCM, nonce = aes_gcm_nonce)
@@ -84,3 +84,4 @@ if __name__ == '__main__':
                   # size verison message        firmware , hash 0x20 , CBC_IV 0x10, GCM_Nonce, tag
  #Encrypt1                                      #AES_CBC ENCRYPTION#                                #Decrypt2
  #Encrypt2               ############### AES_GCM #################################                  #Decrypt1
+                         #########3###### LENGTH  ################################

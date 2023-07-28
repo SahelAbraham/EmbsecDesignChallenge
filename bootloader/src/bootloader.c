@@ -46,7 +46,7 @@ long program_flash(uint32_t, unsigned char *, unsigned int);
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
-#define MAX_FW 30000
+#define MAX_FW 20000
 
 // Protocol Constants
 #define OK ((unsigned char)0x00)
@@ -66,7 +66,6 @@ uint8_t *fw_release_message_address;
 void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
 
 // Firmware Buffer
-unsigned char data[MAX_FW];
 
 int main(void){
 
@@ -182,6 +181,7 @@ void load_firmware(void){
     uint32_t rcv = 0;
 
     uint32_t data_index = 0;
+    uint32_t checksum_index = 0;
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
@@ -191,10 +191,26 @@ void load_firmware(void){
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
     size |= (uint32_t)rcv << 8;
+    
+    unsigned char data[size];
 
+    
     uart_write_str(UART2, "Received Firmware Size: ");
     uart_write_hex(UART2, size);
     nl(UART2);
+
+    unsigned char checksums[(size/256+2)*32];
+    unsigned char gcm_nonce[16];
+    unsigned char tag[128];
+
+    for (int i = 0; i < 16; i++){
+        gcm_nonce[i] = uart_read(UART1, BLOCKING, &read);
+    } 
+    for (int i = 0; i < 128; i++){
+        tag[i] = uart_read(UART1, BLOCKING, &read);
+    } 
+
+    uart_write_str(UART2, "Received nonce+tag");
 
     // Write new firmware size and version to Flash
     // Create 32 bit word for flash programming, version is at lower address, size is at higher address
@@ -223,6 +239,10 @@ void load_firmware(void){
         rcv = uart_read(UART1, BLOCKING, &read);
         frame_length += (int)rcv;
 
+        if(frame_length==0){
+            uart_write(UART1, OK); // Acknowledge the frame.
+            break;
+        }
         // Get the 256 length data
         for (int i = 0; i < frame_length; ++i){
             data[data_index] = uart_read(UART1, BLOCKING, &read);
@@ -236,9 +256,9 @@ void load_firmware(void){
 
         // Get the 32 length checksum
         for (int i = 0; i < 32; ++i){
-            data[data_index] = uart_read(UART1, BLOCKING, &read);
-            data_index += 1;
-            if(data_index>=sizeof(data)){
+            checksums[checksum_index] = uart_read(UART1, BLOCKING, &read);
+            checksum_index += 1;
+            if(checksum_index>=sizeof(checksums)){
                 uart_write(UART1, ERROR); // Reject the metadata.
                 SysCtlReset();            // Reset device
                 return;
@@ -246,7 +266,10 @@ void load_firmware(void){
         } 
 
         uart_write(UART1, OK); // Acknowledge the frame.
-    }                      
+    }
+
+    //decrypt and load raw data into flash
+
 }
 
 /*

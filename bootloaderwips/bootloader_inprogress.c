@@ -51,7 +51,7 @@ void load_initial_firmware(void);
 void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-void decrypt_aes(char*);
+void decrypt_aes();
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -150,7 +150,7 @@ char* compile_ciphertext(char** cipher_frames, int num_frames){
 }
 */
 
-void decrypt_aes(char* initial_data){
+void decrypt_aes(){
     //maybe need to initialize hash parameters
     /*
     ;1. decrypt A 
@@ -170,33 +170,33 @@ void decrypt_aes(char* initial_data){
     // br_aes_ct_cbcdec_init(&cbc_context, cbckey, strlen(cbckey));
     
     // : change from bearssl to beaver ssl 
-    data[strlen(initial_data)];
-    for (size_t i = 0; i < strlen(initial_data); i++)
-    {
-        data[i] = initial_data[i];
-    }
+    // data[strlen(initial_data)];
+    // for (size_t i = 0; i < strlen(initial_data); i++)
+    // {
+    //     data[i] = initial_data[i];
+    // }
     
 
     char nonce[16];
     for (size_t i = 0; i < 16; i++)
     {
-        nonce[i] = data[strlen(initial_data)-32+i];
+        nonce[i] = data[strlen(data)-16-128+i];
     }
     char aad[16];//aad iv is created like a key so it is in the secret file
     
     char tag[128];
     for (size_t i = 0; i < 128; i++)
     {
-        tag[i] = data[strlen(data)-16+i];
+        tag[i] = data[strlen(data)-128+i];
     }
-
+    
     gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
     
     //AES-CBC
     char iv_cbc[16];
     for (size_t i = 0; i < 16; i++)
     {
-        iv_cbc[i] = iv_cbc[FLASH_PAGESIZE+i];
+        iv_cbc[i] = iv_cbc[strlen(data)-128-16-32+i];
     }
     aes_decrypt(cbckey, iv_cbc, data, strlen(data));
     

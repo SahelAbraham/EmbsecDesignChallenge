@@ -96,7 +96,9 @@ def update(ser, infile, debug):
     with open(infile, "rb") as fp:
         all_data = fp.read()
     size = all_data[:2]
-    data_to_send = all_data[2:]
+    data_to_send = all_data[2:-128-16]
+    tag = all_data[-128:]
+    gcm_nonce = all_data[-128-16:-128]
     ser.write(b"U")
 
     print("Waiting for bootloader to enter update mode...")
@@ -105,6 +107,9 @@ def update(ser, infile, debug):
         pass
     print("Writing Size")
     ser.write(size)
+    print("Writing nonce+tag")
+    ser.write(gcm_nonce)
+    ser.write(tag)
     print("Writing firmware.")
     for idx, frame_start in enumerate(range(0, len(data_to_send), FRAME_SIZE)):
         data = data_to_send[frame_start : frame_start + FRAME_SIZE]

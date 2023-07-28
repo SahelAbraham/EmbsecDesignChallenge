@@ -180,14 +180,14 @@ void decrypt_aes(char* initial_data){
     char nonce[16];
     for (size_t i = 0; i < 16; i++)
     {
-        nonce[i] = data[FLASH_PAGESIZE+i];
+        nonce[i] = data[strlen(initial_data)-32+i];
     }
     char aad[16];//aad iv is created like a key so it is in the secret file
     
     char tag[128];
     for (size_t i = 0; i < 128; i++)
     {
-        tag[i] = data[FLASH_PAGESIZE+i];
+        tag[i] = data[strlen(data)-16+i];
     }
 
     gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
@@ -200,56 +200,56 @@ void decrypt_aes(char* initial_data){
     }
     aes_decrypt(cbckey, iv_cbc, data, strlen(data));
     
-    int count;
-    char fw_size[2];
-    for (size_t i = count; i < count+2; i++)
-    {
-        fw_size[i] = data[i];
-    }
-    uint16_t fw_size_int = fw_size[0] + (fw_size[1] << 8);
+    // int count;
+    // char fw_size[2];
+    // for (size_t i = count; i < count+2; i++)
+    // {
+    //     fw_size[i] = data[i];
+    // }
+    // uint16_t fw_size_int = fw_size[0] + (fw_size[1] << 8);
     
-    count += 2;
-    char fw_ver[2];
-    for (size_t i = count; i < count+2; i++)
-    {
-        fw_ver[i] = data[i];
-    }
+    // count += 2;
+    // char fw_ver[2];
+    // for (size_t i = count; i < count+2; i++)
+    // {
+    //     fw_ver[i] = data[i];
+    // }
 
-    count += 2;
-    char msg_size[2];
-    for (size_t i = count; i < count+2; i++)
-    {
-        msg_size[i] = data[i];
-    }
+    // count += 2;
+    // char msg_size[2];
+    // for (size_t i = count; i < count+2; i++)
+    // {
+    //     msg_size[i] = data[i];
+    // }
 
-    count += 2;
-    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
-    char msg_data[msg_size_int];
-    for (size_t i = count; i < count+msg_size_int; i++)
-    {
-        msg_data[i] = data[i];
-    }
+    // count += 2;
+    // uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
+    // char msg_data[msg_size_int];
+    // for (size_t i = count; i < count+msg_size_int; i++)
+    // {
+    //     msg_data[i] = data[i];
+    // }
     
-    count += msg_size_int;
-    char fw_data[fw_size_int];
-    for (size_t i = count; i < count+fw_size_int; i++)
-    {
-        fw_data[i] = data[i];
-    }
+    // count += msg_size_int;
+    // char fw_data[fw_size_int];
+    // for (size_t i = count; i < count+fw_size_int; i++)
+    // {
+    //     fw_data[i] = data[i];
+    // }
     
-    count+=fw_size_int;
-    char hash[32];
-    for (size_t i = count; i < count+32; i++)
-    {
-        hash[i] = data[i];
-    }
+    // count+=fw_size_int;
+    // char hash[32];
+    // for (size_t i = count; i < count+32; i++)
+    // {
+    //     hash[i] = data[i];
+    // }
 
-    count += 32;
-    char iv[16];
-    for (size_t i = count; i < count+16; i++)
-    {
-        hash[i] = data[i];
-    }
+    // count += 32;
+    // char iv[16];
+    // for (size_t i = count; i < count+16; i++)
+    // {
+    //     hash[i] = data[i];
+    // }
     
 }
 

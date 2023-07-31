@@ -178,20 +178,40 @@ void decrypt_aes(){
     // }
     
 
-    char nonce[16];
-    for (size_t i = 0; i < 16; i++)
+    char nonce[12];
+    for (size_t i = 0; i < 12; i++)
     {
-        nonce[i] = data[strlen(data)-16-128+i];
+        nonce[i] = data[strlen(data)-12-128+i];
     }
     char aad[16];//aad iv is created like a key so it is in the secret file
     
-    char tag[128];
-    for (size_t i = 0; i < 128; i++)
+    char tag[16];
+    for (size_t i = 0; i < 16; i++)
     {
-        tag[i] = data[strlen(data)-128+i];
+        tag[i] = data[strlen(data)-16+i];
     }
     
     gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag);
+
+    //Save version and message variables
+    char version[2];
+    for (size_t i = 0; i < 2; i++)
+    {
+        version[i] = data[i];
+    }
+    char msg_size[2]
+    for (size_t i = 0; i < 2; i++)
+    {
+        msg_size[i] = data[i+2];
+    }
+    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
+    char msg[msg_size_int]
+    for (size_t i = 0; i < msg_size_int; i++)
+    {
+        msg[i] = data[i+2+2];
+    }
+    
+    
     
     //AES-CBC
     char iv_cbc[16];

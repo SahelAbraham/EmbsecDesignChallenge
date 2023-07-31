@@ -50,7 +50,6 @@ def send_metadata(ser, metadata, debug=False):
     while ser.read(1).decode() != "U":
         print("got a byte")
         pass
-    print("nice")
     # Send size and version to bootloader.
     if debug:
         print(metadata)
@@ -68,15 +67,15 @@ def send_frame(ser, frame, debug=False):
     ser.write(p16(1,endian = "little"))
     checksum = 0
     ser.write(frame)  # Write the frame...
-
+    frame = frame[2:]
     if debug:
         print(len(frame))
     
     for i in range (len(frame)):
         checksum+=frame[i]
     hash = SHA256.new()
-    hash.update(bytes(checksum))
-    hashed_checksum = bytes(hash.digest())
+    hash.update(bytes(str(checksum),encoding = 'utf8'))
+    hashed_checksum = hash.digest()
     ser.write(hashed_checksum)
     if debug:
         print(len(hashed_checksum))
@@ -96,9 +95,9 @@ def update(ser, infile, debug):
     with open(infile, "rb") as fp:
         all_data = fp.read()
     size = all_data[:2]
-    data_to_send = all_data[2:-128-16]
-    tag = all_data[-128:]
-    gcm_nonce = all_data[-128-16:-128]
+    data_to_send = all_data[2:-12-16] # -16 for tag, -12 for nonce
+    tag = all_data[-16:]
+    gcm_nonce = all_data[-12-16:-16]
     ser.write(b"U")
 
     print("Waiting for bootloader to enter update mode...")
@@ -111,6 +110,7 @@ def update(ser, infile, debug):
     ser.write(gcm_nonce)
     ser.write(tag)
     print("Writing firmware.")
+    print(len(data_to_send))
     for idx, frame_start in enumerate(range(0, len(data_to_send), FRAME_SIZE)):
         data = data_to_send[frame_start : frame_start + FRAME_SIZE]
 
@@ -120,13 +120,13 @@ def update(ser, infile, debug):
 
         # Construct frame.
         frame = struct.pack(frame_fmt, length, data)
-
         send_frame(ser, frame, debug=debug)
         print(f"Wrote frame {idx} ({len(frame)} bytes)")
 
     print("Done writing firmware.")
 
     # Send a zero length payload to tell the bootlader to finish writing it's page.
+    ser.write(p16(1,endian = "little"))
     ser.write(struct.pack(">H", 0x0000))
     resp = ser.read(1)  # Wait for an OK from the bootloader
     if resp != RESP_OK:

@@ -27,7 +27,6 @@ def protect_firmware(infile, outfile, version, message):
     # Pack version and size into two little-endian shorts
     metadata = struct.pack('<HH', version, len(firmware))
     version_pack = p16(version, endian = "little")
-    length_pack = p16(len(firmware), endian = "little")
 
     # Hash the firmware using SHA-256
     hash = SHA256.new()
@@ -44,10 +43,10 @@ def protect_firmware(infile, outfile, version, message):
         aes_key2 = aes_key2[0:-1] #drops newline character
     # Make an IV
     aes_cbc_iv = os.urandom(16) 
-    aes_gcm_nonce = os.urandom(16) #for aes gcm 
+    aes_gcm_nonce = os.urandom(12) #for aes gcm 
 
     # Encrypt firmware + hash with AES-CBC
-    firmware_all= firmware + firmware_hash
+    firmware_all = firmware + firmware_hash
     cipher = AES.new(aes_key1, AES.MODE_CBC,iv=aes_cbc_iv)
     if len(firmware_all)%16 !=0:
         firmware_all = pad(firmware_all,16)
@@ -60,7 +59,7 @@ def protect_firmware(infile, outfile, version, message):
     ciphertext_all = version_pack + message.encode() + ciphertext + aes_cbc_iv 
     
     ciphertext_final, tag = cipher.encrypt_and_digest(pad(ciphertext_all,16))
-
+    length_pack = p16(len(ciphertext_final ), endian = "little")
     ciphertext_final = length_pack + ciphertext_final + aes_gcm_nonce + tag
     # Write firmware blob to outfile
     with open(outfile, 'wb+') as outfile:

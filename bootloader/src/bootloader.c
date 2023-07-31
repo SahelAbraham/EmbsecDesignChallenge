@@ -1,13 +1,11 @@
 // Copyright 2023 The MITRE Corporation. ALL RIGHTS RESERVED
 // Approved for public release. Distribution unlimited 23-02181-13.
 
-
 /*
 ################  ORIGINAL INSECURE BOOTLOADER CODE - DO NOT USE  ######################
 */
 
-
-//Includes 
+// Includes
 #include <stdbool.h>
 // Hardware Imports
 #include "inc/hw_memmap.h" // Peripheral Base Addresses
@@ -38,7 +36,7 @@ void load_initial_firmware(void);
 void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
-
+bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -64,11 +62,12 @@ extern int _binary_firmware_bin_size;
 uint16_t *fw_version_address = (uint16_t *)METADATA_BASE;
 uint16_t *fw_size_address = (uint16_t *)(METADATA_BASE + 2);
 uint8_t *fw_release_message_address;
-void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len);
+void uart_write_hex_bytes(uint8_t uart, uint8_t *start, uint32_t len);
 
 // Firmware Buffer
 
-int main(void){
+int main(void)
+{
 
     // A 'reset' on UART0 will re-start this code at the top of main, won't clear flash, but will clean ram.
 
@@ -91,14 +90,18 @@ int main(void){
     uart_write_str(UART2, "Writing 0x20 to UART0 will reset the device.\n");
 
     int resp;
-    while (1){
+    while (1)
+    {
         uint32_t instruction = uart_read(UART1, BLOCKING, &resp);
-        if (instruction == UPDATE){
+        if (instruction == UPDATE)
+        {
             uart_write_str(UART1, "U");
             load_firmware();
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
-        }else if (instruction == BOOT){
+        }
+        else if (instruction == BOOT)
+        {
             uart_write_str(UART1, "B");
             boot_firmware();
         }
@@ -108,9 +111,11 @@ int main(void){
 /*
  * Load initial firmware into flash
  */
-void load_initial_firmware(void){
+void load_initial_firmware(void)
+{
 
-    if (*((uint32_t *)(METADATA_BASE)) != 0xFFFFFFFF){
+    if (*((uint32_t *)(METADATA_BASE)) != 0xFFFFFFFF)
+    {
         /*
          * Default Flash startup state is all FF since. Only load initial
          * firmware when metadata page is all FF. Thus, exit if there has
@@ -136,7 +141,8 @@ void load_initial_firmware(void){
 
     int i;
 
-    for (i = 0; i < size / FLASH_PAGESIZE; i++){
+    for (i = 0; i < size / FLASH_PAGESIZE; i++)
+    {
         program_flash(FW_BASE + (i * FLASH_PAGESIZE), initial_data + (i * FLASH_PAGESIZE), FLASH_PAGESIZE);
     }
 
@@ -146,14 +152,20 @@ void load_initial_firmware(void){
      */
 
     uint16_t rem_fw_bytes = size % FLASH_PAGESIZE;
-    if (rem_fw_bytes == 0){
+    if (rem_fw_bytes == 0)
+    {
         // No firmware left. Just write the release message
         program_flash(FW_BASE + (i * FLASH_PAGESIZE), (uint8_t *)initial_msg, msg_len);
-    }else{
+    }
+    else
+    {
         // Some firmware left. Determine how many bytes of release message can fit
-        if (msg_len > (FLASH_PAGESIZE - rem_fw_bytes)){
+        if (msg_len > (FLASH_PAGESIZE - rem_fw_bytes))
+        {
             rem_msg_bytes = msg_len - (FLASH_PAGESIZE - rem_fw_bytes);
-        }else{
+        }
+        else
+        {
             rem_msg_bytes = 0;
         }
 
@@ -165,7 +177,8 @@ void load_initial_firmware(void){
         program_flash(FW_BASE + (i * FLASH_PAGESIZE), temp_buf, rem_fw_bytes + (msg_len - rem_msg_bytes));
 
         // If there are more bytes, program them directly from the release message string
-        if (rem_msg_bytes > 0){
+        if (rem_msg_bytes > 0)
+        {
             // Writing to a new page. Increment pointer
             i++;
             program_flash(FW_BASE + (i * FLASH_PAGESIZE), (uint8_t *)(initial_msg + (msg_len - rem_msg_bytes)), rem_msg_bytes);
@@ -176,7 +189,8 @@ void load_initial_firmware(void){
 /*
  * Load the firmware into flash.
  */
-void load_firmware(void){
+void load_firmware(void)
+{
     int frame_length = 0;
     int read = 0;
     uint32_t rcv = 0;
@@ -186,30 +200,32 @@ void load_firmware(void){
     uint32_t version = 0;
     uint32_t size = 0;
 
-    // Get size as 2 bytes 
+    // Get size as 2 bytes
     rcv = uart_read(UART1, BLOCKING, &read);
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
     size |= (uint32_t)rcv << 8;
-    
+
     unsigned char data[size];
 
-    
-    uart_write_str(UART2, "Received Firmware Size: ");
-    uart_write_hex(UART2, size);
-    nl(UART2);
+    uart_write_str(UART0, "Received Firmware Size: ");
+    uart_write_hex(UART0, size);
+    nl(UART0);
 
-    unsigned char gcm_nonce[16];
-    unsigned char tag[128];
+    unsigned char gcm_nonce[12];
+    unsigned char tag[16];
 
-    for (int i = 0; i < 16; i++){
+    for (int i = 0; i < 12; i++)
+    {
         gcm_nonce[i] = uart_read(UART1, BLOCKING, &read);
-    } 
-    for (int i = 0; i < 128; i++){
+    }
+    for (int i = 0; i < 16; i++)
+    {
         tag[i] = uart_read(UART1, BLOCKING, &read);
-    } 
+    }
 
-    uart_write_str(UART2, "Received nonce+tag");
+    uart_write_str(UART0, "Received nonce+tag");
+    nl(UART0);
 
     // Write new firmware size and version to Flash
     // Create 32 bit word for flash programming, version is at lower address, size is at higher address
@@ -219,14 +235,16 @@ void load_firmware(void){
     uart_write(UART1, OK); // Acknowledge the metadata.
 
     /* Loop here until you can get all your characters and stuff */
-    while (1){
+    while (1)
+    {
         // Get start frame endian short
         rcv = uart_read(UART1, BLOCKING, &read);
         int start_short = (int)rcv;
         rcv = uart_read(UART1, BLOCKING, &read);
         start_short |= (int)rcv << 8;
 
-        if (start_short!=1){
+        if (start_short != 1)
+        {
             uart_write(UART1, ERROR); // Reject the metadata.
             SysCtlReset();            // Reset device
             return;
@@ -237,44 +255,46 @@ void load_firmware(void){
         frame_length = (int)rcv << 8;
         rcv = uart_read(UART1, BLOCKING, &read);
         frame_length += (int)rcv;
-
-        if(frame_length==0){
+        if (frame_length == 0)
+        {
             uart_write(UART1, OK); // Acknowledge the frame.
             break;
         }
-        unsigned char tempdata[256];
+        unsigned char tempdata[frame_length];
         // Get the 256 length data
-        for (int i = 0; i < frame_length; i++){
+        for (int i = 0; i < frame_length; i++)
+        {
             data[data_index] = uart_read(UART1, BLOCKING, &read);
             tempdata[i] = data[data_index];
-            data_index += 1;
-            if(data_index>=sizeof(data)){
+            if (data_index >= sizeof(data))
+            {
                 uart_write(UART1, ERROR); // Reject the metadata.
                 SysCtlReset();            // Reset device
                 return;
             }
-        } 
+            data_index += 1;
+        }
         unsigned char checksums[32];
         // Get the 32 length checksum
-        for (int i = 0; i < 32; i++){
+        for (int i = 0; i < 32; i++)
+        {
             checksums[i] = uart_read(UART1, BLOCKING, &read);
-        } 
-        /*
-        if(verify_frame(tempdata, sizeof(tempdata), checksums)){
+        }
+
+        bool verified = verify_frame(tempdata, 256, checksums);
+        if (verified)
+        {
             uart_write(UART1, OK); // Acknowledge the frame.
-        }else{
+        }
+        else
+        {
             uart_write(UART1, ERROR); // Reject the metadata.
             SysCtlReset();            // Reset device
             return;
         }
-        */
-        uart_write(UART1, OK);
-        
-
     }
-
-    //decrypt and load raw data into flash
-
+    //aes_decrypt(data,gcm_nonce,tag);
+    // decrypt and load raw data into flash
 }
 
 /*
@@ -285,7 +305,8 @@ void load_firmware(void){
  * This functions performs an erase of the specified flash page before writing
  * the data.
  */
-long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_len){
+long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_len)
+{
     uint32_t word = 0;
     int ret;
     int i;
@@ -296,34 +317,41 @@ long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_le
     // Clear potentially unused bytes in last word
     // If data not a multiple of 4 (word size), program up to the last word
     // Then create temporary variable to create a full last word
-    if (data_len % FLASH_WRITESIZE){
+    if (data_len % FLASH_WRITESIZE)
+    {
         // Get number of unused bytes
         int rem = data_len % FLASH_WRITESIZE;
         int num_full_bytes = data_len - rem;
 
         // Program up to the last word
         ret = FlashProgram((unsigned long *)data, page_addr, num_full_bytes);
-        if (ret != 0){
+        if (ret != 0)
+        {
             return ret;
         }
 
         // Create last word variable -- fill unused with 0xFF
-        for (i = 0; i < rem; i++){
+        for (i = 0; i < rem; i++)
+        {
             word = (word >> 8) | (data[num_full_bytes + i] << 24); // Essentially a shift register from MSB->LSB
         }
-        for (i = i; i < 4; i++){
+        for (i = i; i < 4; i++)
+        {
             word = (word >> 8) | 0xFF000000;
         }
 
         // Program word
         return FlashProgram(&word, page_addr + num_full_bytes, 4);
-    }else{
+    }
+    else
+    {
         // Write full buffer of 4-byte words
         return FlashProgram((unsigned long *)data, page_addr, data_len);
     }
 }
 
-void boot_firmware(void){
+void boot_firmware(void)
+{
     // compute the release message address, and then print it
     uint16_t fw_size = *fw_size_address;
     fw_release_message_address = (uint8_t *)(FW_BASE + fw_size);
@@ -335,27 +363,97 @@ void boot_firmware(void){
         "BX R0\n\t");
 }
 
-void uart_write_hex_bytes(uint8_t uart, uint8_t * start, uint32_t len) {
-    for (uint8_t * cursor = start; cursor < (start + len); cursor += 1) {
+void uart_write_hex_bytes(uint8_t uart, uint8_t *start, uint32_t len)
+{
+    for (uint8_t *cursor = start; cursor < (start + len); cursor += 1)
+    {
         uint8_t data = *((uint8_t *)cursor);
         uint8_t right_nibble = data & 0xF;
         uint8_t left_nibble = (data >> 4) & 0xF;
         char byte_str[3];
-        if (right_nibble > 9) {
+        if (right_nibble > 9)
+        {
             right_nibble += 0x37;
-        } else {
+        }
+        else
+        {
             right_nibble += 0x30;
         }
         byte_str[1] = right_nibble;
-        if (left_nibble > 9) {
+        if (left_nibble > 9)
+        {
             left_nibble += 0x37;
-        } else {
+        }
+        else
+        {
             left_nibble += 0x30;
         }
         byte_str[0] = left_nibble;
         byte_str[2] = '\0';
-        
+
         uart_write_str(uart, byte_str);
         uart_write_str(uart, " ");
     }
+}
+//bytes to hex (?)
+void byteToHexString(unsigned char byte, char* hexString) {
+    static const char hexChars[] = "0123456789ABCDEF";
+    hexString[0] = hexChars[(byte >> 4) & 0xF];
+    hexString[1] = hexChars[byte & 0xF];
+    hexString[2] = '\0'; // Null-terminate the string
+}
+
+
+// verifying if checksum for frames are correct
+bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum)
+{
+    unsigned int new_checksum = 0; 
+
+    // Calculate checksum each custom algorithm
+    for (uint32_t i = 0; i < frame_len; i++)
+    {
+        new_checksum += frame_data[i];
+    }
+    
+    int numlength = 0;
+    int tempnum = new_checksum;
+    while(tempnum>0){
+        tempnum = tempnum/10;
+        numlength++;
+    }
+    tempnum = new_checksum;
+    char checksumarray[numlength];
+    while(tempnum>0){
+        numlength--;
+        checksumarray[numlength] = (char)tempnum%10;
+        tempnum = tempnum/10;
+    }
+
+    unsigned char hash[32];
+    sha_hash("a", 1, hash);
+
+    // check hashes
+    // for (int i = 0; i < 64; i++)
+    // {
+    //     if (hash[i] != hashed_checksum[i])
+    //     {
+    //         return false;
+    //     }
+    //     if (sizeof(hash[i]) != sizeof(hashed_checksum[i]))
+    //     {
+    //         return false;
+    //     }
+    // }
+    // hash_sum = 0
+    // for(int i = 0; i<32; i++){
+    //      hash_sum += hash[i]<<16*i
+    //     }
+    // hash_sum = 0
+    // for(int i = 0; i<32; i++){
+    //      hash_sum += hash[i]<<16*i
+    //     }
+    // if((hash^hashed_checksum)!=0){
+    //     return false;
+    // }
+    return true;
 }

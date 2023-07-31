@@ -39,6 +39,7 @@ void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 
+
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
 #define FW_BASE 0x10000      // base address of firmware in Flash
@@ -181,7 +182,6 @@ void load_firmware(void){
     uint32_t rcv = 0;
 
     uint32_t data_index = 0;
-    uint32_t checksum_index = 0;
     uint32_t page_addr = FW_BASE;
     uint32_t version = 0;
     uint32_t size = 0;
@@ -199,7 +199,6 @@ void load_firmware(void){
     uart_write_hex(UART2, size);
     nl(UART2);
 
-    unsigned char checksums[(size/256+2)*32];
     unsigned char gcm_nonce[16];
     unsigned char tag[128];
 
@@ -243,9 +242,11 @@ void load_firmware(void){
             uart_write(UART1, OK); // Acknowledge the frame.
             break;
         }
+        unsigned char tempdata[256];
         // Get the 256 length data
-        for (int i = 0; i < frame_length; ++i){
+        for (int i = 0; i < frame_length; i++){
             data[data_index] = uart_read(UART1, BLOCKING, &read);
+            tempdata[i] = data[data_index];
             data_index += 1;
             if(data_index>=sizeof(data)){
                 uart_write(UART1, ERROR); // Reject the metadata.
@@ -253,19 +254,23 @@ void load_firmware(void){
                 return;
             }
         } 
-
+        unsigned char checksums[32];
         // Get the 32 length checksum
-        for (int i = 0; i < 32; ++i){
-            checksums[checksum_index] = uart_read(UART1, BLOCKING, &read);
-            checksum_index += 1;
-            if(checksum_index>=sizeof(checksums)){
-                uart_write(UART1, ERROR); // Reject the metadata.
-                SysCtlReset();            // Reset device
-                return;
-            }
+        for (int i = 0; i < 32; i++){
+            checksums[i] = uart_read(UART1, BLOCKING, &read);
         } 
+        /*
+        if(verify_frame(tempdata, sizeof(tempdata), checksums)){
+            uart_write(UART1, OK); // Acknowledge the frame.
+        }else{
+            uart_write(UART1, ERROR); // Reject the metadata.
+            SysCtlReset();            // Reset device
+            return;
+        }
+        */
+        uart_write(UART1, OK);
+        
 
-        uart_write(UART1, OK); // Acknowledge the frame.
     }
 
     //decrypt and load raw data into flash

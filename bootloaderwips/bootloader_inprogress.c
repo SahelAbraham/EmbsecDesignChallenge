@@ -52,6 +52,7 @@ void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 void decrypt_aes();
+bool verify_frame(unsigned char* frame_data, int frame_len, unsigned char* hashed_checksum);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -253,32 +254,25 @@ void decrypt_aes(){
     
 }
 
-// CHECK SUM 
-unsigned char calculate_custom_checksum(const unsigned char* data, uint32_t data_len) {
-    unsigned int checksum = 0xFF; // Initialize checksum to 0xFF
+//verifying if checksum for frames are correct
+bool verify_frame(unsigned char* frame_data, int frame_len, unsigned char* hashed_checksum){
+    unsigned int new_checksum = 0xFF; // Initialize checksum to 0xFF
 
     // Calculate checksum each custom algorithm
-    for (uint32_t i = 0; i < data_len; i++) {
-        if (i == 0 , i == 1 , i == 2) {
-            continue; // Skip the start delimiter and length bytes
+    for (uint32_t i = 0; i < frame_len; i++) {
+        new_checksum += frame_data[i];
+    }
+    unsigned char hash[32];
+    sha_hash((unsigned char*)new_checksum, sizeof(new_checksum), hash);
+
+
+    //check hashes
+    for(int i=0;i<32;i++){
+        if(hash[i]!=hashed_checksum[i]){ 
+            return false; 
         }
-        checksum += data[i];
     }
-
-    return (unsigned char)(checksum & 0xFF); // Keep only the lowest 8 bits
-}
-
-//verifying if checksum for frames are correct
-bool verify_frame(const unsigned char* frame_data, uint32_t frame_len){
-    if (frame_len < 2) {
-        return false;//we return false because frame is too small for checksum
-    }
-
-    //checks the payload
-    unsigned char calculate_checksum = calculate_custom_checksum(frame_data, frame_len-1);
-
-    //check the last digit
-    return (calculate_checksum == frame_data[frame_len - 1]);
+    return true;
 }
 
 

@@ -199,13 +199,13 @@ void decrypt_aes(){
     {
         version[i] = data[i];
     }
-    char msg_size[2]
+    char msg_size[2];
     for (size_t i = 0; i < 2; i++)
     {
         msg_size[i] = data[i+2];
     }
     uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
-    char msg[msg_size_int]
+    char msg[msg_size_int];
     for (size_t i = 0; i < msg_size_int; i++)
     {
         msg[i] = data[i+2+2];

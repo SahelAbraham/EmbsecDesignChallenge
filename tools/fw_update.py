@@ -95,9 +95,9 @@ def update(ser, infile, debug):
     with open(infile, "rb") as fp:
         all_data = fp.read()
     size = all_data[:2]
-    data_to_send = all_data[2:-12-16] # -16 for tag, -12 for nonce
+    data_to_send = all_data[2:-16-16] # -16 for tag, -12 for nonce
     tag = all_data[-16:]
-    gcm_nonce = all_data[-12-16:-16]
+    gcm_nonce = all_data[-16-16:-16]
     ser.write(b"U")
 
     print("Waiting for bootloader to enter update mode...")

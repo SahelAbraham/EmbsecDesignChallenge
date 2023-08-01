@@ -43,7 +43,7 @@ def protect_firmware(infile, outfile, version, message):
         aes_key2 = aes_key2[0:-1] #drops newline character
     # Make an IV
     aes_cbc_iv = os.urandom(16) 
-    aes_gcm_nonce = os.urandom(12) #for aes gcm 
+    aes_gcm_nonce = os.urandom(16) #for aes gcm 
 
     # Encrypt firmware + hash with AES-CBC
     firmware_all = firmware + firmware_hash

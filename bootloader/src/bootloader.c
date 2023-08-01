@@ -219,10 +219,10 @@ void load_firmware(void)
     uart_write_hex(UART0, size);
     nl(UART0);
 
-    unsigned char gcm_nonce[12];
+    unsigned char gcm_nonce[16];
     unsigned char tag[16];
 
-    for (int i = 0; i < 12; i++)
+    for (int i = 0; i < 16; i++)
     {
         gcm_nonce[i] = uart_read(UART1, BLOCKING, &read);
     }
@@ -420,12 +420,14 @@ unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned c
     uart_write_str(UART0, "test1");
     nl(UART0);
     gcm_decrypt_and_verify(gcmkey, nonce, data, sizeof(data), aad, sizeof(aad), tag);
-    // if(1!=gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag)){ //Run gcm decrypt and verify that tag is accurate
-    //     uart_write(UART0, ERROR); // Reject the metadata.
-    //     nl(UART0);
-    //     SysCtlReset();            // Reset device
-    //     return;
-    // }
+    uart_write_str(UART0, "test1.2");
+    nl(UART0);
+     //if(1!=gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag)){ //Run gcm decrypt and verify that tag is accurate
+       //  uart_write(UART0, ERROR); // Reject the metadata.
+        // nl(UART0);
+        // SysCtlReset();            // Reset device
+        // return;
+     //}
 
     uart_write_str(UART0, "test2");
     nl(UART0);

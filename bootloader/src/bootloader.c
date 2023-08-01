@@ -18,12 +18,14 @@
 #include "driverlib/sysctl.h"    // System control API (clock/reset)
 #include "driverlib/interrupt.h" // Interrupt API
 
-// Beaver SSL
+#include "bootloader_secrets.h"
+
+// Beaver + Bear SSL
 #include <beaverssl.h>
+#include <bearssl.h>
 
 // Library Imports
 #include <string.h>
-#include <beaverssl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -37,6 +39,7 @@ void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum);
+unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned char* tag);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -45,7 +48,7 @@ bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashe
 // FLASH Constants
 #define FLASH_PAGESIZE 1024
 #define FLASH_WRITESIZE 4
-#define MAX_FW 20000
+#define MAX_FW 15000
 
 // Protocol Constants
 #define OK ((unsigned char)0x00)
@@ -205,7 +208,11 @@ void load_firmware(void)
     size = (uint32_t)rcv;
     rcv = uart_read(UART1, BLOCKING, &read);
     size |= (uint32_t)rcv << 8;
-
+    if(size>MAX_FW){
+        uart_write(UART1, ERROR); // Reject the metadata.
+        SysCtlReset();            // Reset device
+        return;
+    }
     unsigned char data[size];
 
     uart_write_str(UART0, "Received Firmware Size: ");
@@ -249,7 +256,9 @@ void load_firmware(void)
             SysCtlReset();            // Reset device
             return;
         }
-
+        
+        uart_write_str(UART0, "receiving data");
+        nl(UART0);
         // Get two bytes for the length.
         rcv = uart_read(UART1, BLOCKING, &read);
         frame_length = (int)rcv << 8;
@@ -257,6 +266,8 @@ void load_firmware(void)
         frame_length += (int)rcv;
         if (frame_length == 0)
         {
+            uart_write_str(UART0, "finished receiving data");
+            nl(UART0);
             uart_write(UART1, OK); // Acknowledge the frame.
             break;
         }
@@ -293,7 +304,9 @@ void load_firmware(void)
             return;
         }
     }
-    //aes_decrypt(data,gcm_nonce,tag);
+    uart_write_str(UART0, "starting decrypt");
+    nl(UART0);
+    unsigned char* unencrypted_data = decrypt_aes(data,gcm_nonce,tag);
     // decrypt and load raw data into flash
 }
 
@@ -402,7 +415,54 @@ void byteToHexString(unsigned char byte, char* hexString) {
     hexString[1] = hexChars[byte & 0xF];
     hexString[2] = '\0'; // Null-terminate the string
 }
+unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned char* tag){
+    
+    uart_write_str(UART0, "test1");
+    nl(UART0);
+    gcm_decrypt_and_verify(gcmkey, nonce, data, sizeof(data), aad, sizeof(aad), tag);
+    // if(1!=gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag)){ //Run gcm decrypt and verify that tag is accurate
+    //     uart_write(UART0, ERROR); // Reject the metadata.
+    //     nl(UART0);
+    //     SysCtlReset();            // Reset device
+    //     return;
+    // }
 
+    uart_write_str(UART0, "test2");
+    nl(UART0);
+    //Save version and message variables
+    char version[2];
+    for (size_t i = 0; i < 2; i++)
+    {
+        version[i] = data[i];
+    }
+    char msg_size[2];
+    for (size_t i = 0; i < 2; i++)
+    {
+        msg_size[i] = data[i+2];
+    }
+    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
+    char msg[msg_size_int];
+    for (size_t i = 0; i < msg_size_int; i++)
+    {
+        msg[i] = data[i+2+2];
+    }
+    
+    
+    
+    //AES-CBC
+    char iv_cbc[16];
+    for (size_t i = 0; i < 16; i++)
+    {
+        iv_cbc[i] = iv_cbc[strlen(data)-128-16-32+i];
+    }
+    uart_write_str(UART0, "test3");
+    nl(UART0);
+    aes_decrypt(cbckey, iv_cbc, data, strlen(data));
+    uart_write_str(UART0, "test4");
+    nl(UART0);
+    uart_write_hex(UART0, sizeof(data));
+    return data;
+}
 
 // verifying if checksum for frames are correct
 bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum)
@@ -429,8 +489,9 @@ bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashe
         tempnum = tempnum/10;
     }
 
-    unsigned char hash[32];
-    sha_hash("a", 1, hash);
+    uint8_t hash[32];
+    uint8_t data[] = "Hello, world!asdfasdf";
+    sha_hash(data, sizeof(data), hash);
 
     // check hashes
     // for (int i = 0; i < 64; i++)

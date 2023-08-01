@@ -56,7 +56,8 @@ def protect_firmware(infile, outfile, version, message):
     cipher = AES.new(aes_key2, AES.MODE_GCM, nonce = aes_gcm_nonce)
     cipher.update(gcm_aad)
 
-    ciphertext_all = version_pack + message.encode() + ciphertext + aes_cbc_iv 
+    msg_size = p16(len(message.encode()), endian = "little")
+    ciphertext_all = version_pack + msg_size + message.encode() + ciphertext + aes_cbc_iv 
     
     ciphertext_final, tag = cipher.encrypt_and_digest(pad(ciphertext_all,16))
     length_pack = p16(len(ciphertext_final ), endian = "little")
@@ -80,7 +81,7 @@ if __name__ == '__main__':
 
 
 
-                  # size verison message        firmware , hash 0x20 , CBC_IV 0x10, GCM_Nonce, tag
+                  # size verison msg_size message        firmware , hash 0x20 , CBC_IV 0x10, GCM_Nonce, tag
  #Encrypt1                                      #AES_CBC ENCRYPTION#                                #Decrypt2
  #Encrypt2               ############### AES_GCM #################################                  #Decrypt1
                          #########3###### LENGTH  ################################

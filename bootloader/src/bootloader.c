@@ -291,7 +291,7 @@ void load_firmware(void)
         {
             checksums[i] = uart_read(UART1, BLOCKING, &read);
         }
-
+        
         bool verified = verify_frame(tempdata, 256, checksums);
         if (verified)
         {
@@ -490,10 +490,17 @@ bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashe
         checksumarray[numlength] = (char)tempnum%10;
         tempnum = tempnum/10;
     }
-
+    uart_write_hex(UART0, frame_data);
+    nl(UART0);
+    uart_write_hex(UART0, frame_len);
+    nl(UART0);
+    uart_write_hex(UART0, hashed_checksum);
+    nl(UART0);
     uint8_t hash[32];
     uint8_t data[] = "Hello, world!asdfasdf";
-    sha_hash(data, sizeof(data), hash);
+    sha_hash(frame_data, frame_len, hash);
+    uart_write_hex(UART0, hash);
+    nl(UART0);
 
     // check hashes
     // for (int i = 0; i < 64; i++)

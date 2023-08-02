@@ -442,7 +442,7 @@ unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned c
     // br_aes_ct_ctr_init(&keyctx, gcmkey, len(gcmkey)); 
 
     //initialize the block cipher context with key
-    ctrclassptr -> init(&ctrclassptr, "key", len("key"));//TODO: put key in
+    ctrclassptr -> init(&ctrclassptr, gcmkey, len(gcmkey));
     
     br_gcm_init(&ctx, &ctrclassptr, ghash);
     br_gcm_reset(&ctx, nonce, len(nonce));

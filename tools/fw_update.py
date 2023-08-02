@@ -29,7 +29,7 @@ import socket
 
 from util import *
 
-from pwn import p16
+from pwn import p16, u16
 from Crypto.Util.Padding import pad
 from Crypto.Hash import SHA256
 
@@ -95,9 +95,12 @@ def update(ser, infile, debug):
     with open(infile, "rb") as fp:
         all_data = fp.read()
     size = all_data[:2]
-    data_to_send = all_data[2:-16-16] # -16 for tag, -12 for nonce
-    tag = all_data[-16:]
-    gcm_nonce = all_data[-16-16:-16]
+    version = all_data[2:4]
+    msg_size = all_data[4:6]
+    msg_size_int = u16(msg_size, endianness = 'little')
+    msg = all_data[6:6+msg_size_int]
+    iv = all_data[-16:]
+    data_to_send = all_data[6+msg_size_int:-16] # -16 for tag, -12 for nonce
     ser.write(b"U")
 
     print("Waiting for bootloader to enter update mode...")
@@ -106,9 +109,11 @@ def update(ser, infile, debug):
         pass
     print("Writing Size")
     ser.write(size)
-    print("Writing nonce+tag")
-    ser.write(gcm_nonce)
-    ser.write(tag)
+    print("Writing Metadata")
+    ser.write(version)
+    ser.write(msg_size)
+    ser.write(msg)
+    ser.write(iv)
     print("Writing firmware.")
     print(len(data_to_send))
     for idx, frame_start in enumerate(range(0, len(data_to_send), FRAME_SIZE)):

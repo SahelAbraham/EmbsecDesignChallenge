@@ -39,7 +39,7 @@ void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum);
-unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned char* tag);
+unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char iv[16]);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -200,8 +200,9 @@ void load_firmware(void)
 
     uint32_t data_index = 0;
     uint32_t page_addr = FW_BASE;
-    uint32_t version = 0;
     uint32_t size = 0;
+    uint32_t msg_size=0;
+    uint32_t version=0;
 
     // Get size as 2 bytes
     rcv = uart_read(UART1, BLOCKING, &read);
@@ -219,20 +220,46 @@ void load_firmware(void)
     uart_write_hex(UART0, size);
     nl(UART0);
 
-    unsigned char gcm_nonce[16];
-    unsigned char tag[16];
-
-    for (int i = 0; i < 16; i++)
-    {
-        gcm_nonce[i] = uart_read(UART1, BLOCKING, &read);
-    }
-    for (int i = 0; i < 16; i++)
-    {
-        tag[i] = uart_read(UART1, BLOCKING, &read);
-    }
-
-    uart_write_str(UART0, "Received nonce+tag");
+    // Get version as 2 bytes
+    rcv = uart_read(UART1, BLOCKING, &read);
+    version = (uint32_t)rcv;
+    rcv = uart_read(UART1, BLOCKING, &read);
+    version |= (uint32_t)rcv << 8;
+    uart_write_hex(UART0, version);
     nl(UART0);
+
+    // Get msg_size as 2 bytes
+    rcv = uart_read(UART1, BLOCKING, &read);
+    msg_size = (uint32_t)rcv;
+    rcv = uart_read(UART1, BLOCKING, &read);
+    msg_size |= (uint32_t)rcv << 8;
+    uart_write_hex(UART0, msg_size);
+    nl(UART0);
+    unsigned char msg[msg_size];
+    unsigned char iv[16];
+
+    for (int i = 0; i < msg_size; i++)
+    {
+       msg[i] = uart_read(UART1, BLOCKING, &read);
+    }
+    for (int i = 0; i < 16; i++)
+    {
+       iv[i] = uart_read(UART1, BLOCKING, &read);
+    }
+    uart_write_str(UART0, "Received Metadata");
+    nl(UART0);
+
+    //unsigned char gcm_nonce[16];
+    //unsigned char tag[16];
+
+    //for (int i = 0; i < 16; i++)
+    //{
+     //   gcm_nonce[i] = uart_read(UART1, BLOCKING, &read);
+    //}
+    //for (int i = 0; i < 16; i++)
+    //{
+    //    tag[i] = uart_read(UART1, BLOCKING, &read);
+    //}
 
     // Write new firmware size and version to Flash
     // Create 32 bit word for flash programming, version is at lower address, size is at higher address
@@ -291,22 +318,11 @@ void load_firmware(void)
         {
             checksums[i] = uart_read(UART1, BLOCKING, &read);
         }
-        
-        bool verified = verify_frame(tempdata, 256, checksums);
-        if (verified)
-        {
-            uart_write(UART1, OK); // Acknowledge the frame.
-        }
-        else
-        {
-            uart_write(UART1, ERROR); // Reject the metadata.
-            SysCtlReset();            // Reset device
-            return;
-        }
+        uart_write(UART1, OK); // Acknowledge the frame.
     }
     uart_write_str(UART0, "starting decrypt");
     nl(UART0);
-    unsigned char* unencrypted_data = decrypt_aes(data,gcm_nonce,tag);
+    unsigned char* unencrypted_data = decrypt_aes(data, sizeof(data), iv);
     // decrypt and load raw data into flash
 }
 
@@ -415,79 +431,62 @@ void byteToHexString(unsigned char byte, char* hexString) {
     hexString[1] = hexChars[byte & 0xF];
     hexString[2] = '\0'; // Null-terminate the string
 }
-unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned char* tag){
+unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char iv_cbc[16]){
     
-    /* beaverssl GCM implementation
-    // uart_write_str(UART0, "test1");
-    // nl(UART0);
-    // gcm_decrypt_and_verify(gcmkey, nonce, data, sizeof(data), aad, sizeof(aad), tag);
-    // uart_write_str(UART0, "test1.2");
-    // nl(UART0);
-    */
-     //if(1!=gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag)){ //Run gcm decrypt and verify that tag is accurate
-       //  uart_write(UART0, ERROR); // Reject the metadata.
-        // nl(UART0);
-        // SysCtlReset();            // Reset device
-        // return;
-     //}
-    
-    //bearssl gcm implementation
-    //create gcm context, block cipher context with aes-128, ghash
-    br_gcm_context ctx;
-    const br_block_ctr_class* ctrclassptr = &br_aes_big_ctr_vtable;
-    br_ghash ghash;
-
-    // these 2 lines are not needed but I keep them just in case
-    // br_aes_ct_ctr_keys keyctx;
-    // br_aes_ct_ctr_init(&keyctx, gcmkey, len(gcmkey)); 
-
-    //initialize the block cipher context with key
-    ctrclassptr -> init(&ctrclassptr, gcmkey, len(gcmkey));
-    
-    br_gcm_init(&ctx, &ctrclassptr, ghash);
-    br_gcm_reset(&ctx, nonce, len(nonce));
-    br_gcm_aad_inject(&ctx, aad, len(aad));
-    br_gcm_flip(&ctx);
-
-    br_gcm_run(&ctx, 0, data, len(data));
-    //end of br_gcm
-
-    uart_write_str(UART0, "test2");
+    uart_write_str(UART0, "in decryption function");
     nl(UART0);
-    //Save version and message variables
-    char version[2];
-    for (size_t i = 0; i < 2; i++)
-    {
-        version[i] = data[i];
-    }
-    char msg_size[2];
-    for (size_t i = 0; i < 2; i++)
-    {
-        msg_size[i] = data[i+2];
-    }
-    uint16_t msg_size_int = msg_size[0] + (msg_size[1] << 8);
-    char msg[msg_size_int];
-    for (size_t i = 0; i < msg_size_int; i++)
-    {
-        msg[i] = data[i+2+2];
-    }
     
-    
-    
-    //AES-CBC
-    char iv_cbc[16];
-    for (size_t i = 0; i < 16; i++)
-    {
-        iv_cbc[i] = iv_cbc[strlen(data)-128-16-32+i];
-    }
-    uart_write_str(UART0, "test3");
+    uart_write_hex(UART0, data_len);
     nl(UART0);
-    aes_decrypt(cbckey, iv_cbc, data, strlen(data));
-    uart_write_str(UART0, "test4");
+
+
+
+    // //AES_CBC bearssl implementation 1
+    // br_aes_ct_cbcdec_keys ctx;
+    // br_aes_ct_cbcdec_init(&ctx, cbckey, sizeof(cbckey));
+    
+    // //run cbc decryption
+    // br_aes_ct_cbcdec_run(&ctx, iv_cbc, data, data_len);
+
+
+    //AES_CBC bearssl implementaion 2
+    const br_block_cbcdec_class* vd = &br_aes_small_cbcdec_vtable;
+    br_aes_gen_cbcdec_keys v_dc;
+    const br_block_cbcdec_class** dc;
+    
+    dc = &v_dc.vtable;
+    vd->init(dc, cbckey, sizeof(cbckey));
+    uart_write_str(UART0, "initialized - Plan B works");
+    nl(UART0);    
+    vd->run(dc, iv_cbc, data, data_len);
+    uart_write_str(UART0, "decrypt run");
+    nl(UART0);    
+
+    //clean context
+    // br_aes_ct_cbcdec_zero(&ctx);
+    uart_write_hex_bytes(UART0, data, data_len);
     nl(UART0);
-    uart_write_hex(UART0, sizeof(data));
     return data;
+    // //AES-CBC
+    // char iv_cbc[16];
+    // for (size_t i = 0; i < 16; i++)
+    // {
+    //     iv_cbc[i] = iv_cbc[strlen(data)-128-16-32+i];
+    // }
+    // uart_write_str(UART0, "test3");
+    // nl(UART0);
+    // aes_decrypt(cbckey, iv_cbc, data, strlen(data));
+    // uart_write_str(UART0, "test4");
+    // nl(UART0);
+    // uart_write_hex(UART0, sizeof(data));
 }
+
+// void send_firmware(){
+//     program_flash(FW_BASE + (i*FLASH_PAGESIZE), (uint8_t *)initial_msg, msg_len);
+// }   {
+       // program_flash(FW_BASE + (i * FLASH_PAGESIZE), initial_data + (i * FLASH_PAGESIZE), FLASH_PAGESIZE);
+//    }
+//}
 
 // verifying if checksum for frames are correct
 bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum)
@@ -546,7 +545,8 @@ bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashe
     //      hash_sum += hash[i]<<16*i
     //     }
     // if((hash^hashed_checksum)!=0){
-    //     return false;
+ 
+   //     return false;
     // }
     return true;
 }

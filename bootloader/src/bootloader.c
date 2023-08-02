@@ -417,17 +417,40 @@ void byteToHexString(unsigned char byte, char* hexString) {
 }
 unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned char* tag){
     
-    uart_write_str(UART0, "test1");
-    nl(UART0);
-    gcm_decrypt_and_verify(gcmkey, nonce, data, sizeof(data), aad, sizeof(aad), tag);
-    uart_write_str(UART0, "test1.2");
-    nl(UART0);
+    /* beaverssl GCM implementation
+    // uart_write_str(UART0, "test1");
+    // nl(UART0);
+    // gcm_decrypt_and_verify(gcmkey, nonce, data, sizeof(data), aad, sizeof(aad), tag);
+    // uart_write_str(UART0, "test1.2");
+    // nl(UART0);
+    */
      //if(1!=gcm_decrypt_and_verify(gcmkey, nonce, data, strlen(data), aad, strlen(aad), tag)){ //Run gcm decrypt and verify that tag is accurate
        //  uart_write(UART0, ERROR); // Reject the metadata.
         // nl(UART0);
         // SysCtlReset();            // Reset device
         // return;
      //}
+    
+    //bearssl gcm implementation
+    //create gcm context, block cipher context with aes-128, ghash
+    br_gcm_context ctx;
+    const br_block_ctr_class* ctrclassptr = &br_aes_big_ctr_vtable;
+    br_ghash ghash;
+
+    // these 2 lines are not needed but I keep them just in case
+    // br_aes_ct_ctr_keys keyctx;
+    // br_aes_ct_ctr_init(&keyctx, gcmkey, len(gcmkey)); 
+
+    //initialize the block cipher context with key
+    ctrclassptr -> init(&ctrclassptr, "key", len("key"));//TODO: put key in
+    
+    br_gcm_init(&ctx, &ctrclassptr, ghash);
+    br_gcm_reset(&ctx, nonce, len(nonce));
+    br_gcm_aad_inject(&ctx, aad, len(aad));
+    br_gcm_flip(&ctx);
+
+    br_gcm_run(&ctx, 0, data, len(data));
+    //end of br_gcm
 
     uart_write_str(UART0, "test2");
     nl(UART0);

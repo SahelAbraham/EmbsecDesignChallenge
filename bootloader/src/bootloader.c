@@ -334,13 +334,14 @@ void load_firmware(void)
                      
 }
 
+
+unsigned char data2write[FLASH_PAGESIZE];
 void write_to_flash(unsigned char* data, uint32_t size){
     uart_write_str(UART0, "inside writetoflash");
     nl(UART0);
     uart_write_str(UART0, "test");
     nl(UART0);
     uint32_t page_addr=FW_BASE;
-    unsigned char data2write[FLASH_PAGESIZE];
     uint32_t data2write_index=0;
     uart_write_str(UART0, "Unpadded FW Size: ");
     uart_write_hex(UART0, size);
@@ -351,13 +352,20 @@ void write_to_flash(unsigned char* data, uint32_t size){
         if (data2write_index==FLASH_PAGESIZE||i==size-1){
             uart_write_str(UART0, "Writing Page...");
             nl(UART0);
-            /*
+            
             // Try to write flash and check for error - this if block is breaking the bootloader
-            if (program_flash(page_addr, data2write, FLASH_PAGESIZE)){
+            // for(int j=0;j<1024;j++){
+            //     unsigned char tempdata[1];
+            //     tempdata[0] = data2write[0];
+            //     program_flash(page_addr, tempdata, 1);
+            //     page_addr += 1;
+            // }
+            if (program_flash(page_addr, data2write, 1024)){
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
                 return;
-            }*/
+            }
+            
             
             // Verify flash program
             if (memcmp(data, (void *) page_addr, FLASH_PAGESIZE) != 0){
@@ -375,7 +383,6 @@ void write_to_flash(unsigned char* data, uint32_t size){
             nl(UART0);
 
             // Update to next page
-            page_addr += FLASH_PAGESIZE;
             data2write_index = 0;
             
         }

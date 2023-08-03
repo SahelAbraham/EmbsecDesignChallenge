@@ -395,7 +395,7 @@ void load_firmware(void)
     {
         program_flash(FLASH_BASE + (i * FLASH_PAGESIZE), dataarr[i], FLASH_PAGESIZE);
     }
-    //deal with the incomplete page
+    //deal with the incomplete page below
     
 }
 

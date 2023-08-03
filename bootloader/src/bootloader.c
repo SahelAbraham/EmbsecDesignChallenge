@@ -335,23 +335,32 @@ void load_firmware(void)
 }
 
 void write_to_flash(unsigned char* data, uint32_t size){
-    uint32_t page_addr=0;
+    uart_write_str(UART0, "inside writetoflash");
+    nl(UART0);
+    uart_write_str(UART0, "test");
+    nl(UART0);
+    uint32_t page_addr=FW_BASE;
     unsigned char data2write[FLASH_PAGESIZE];
     uint32_t data2write_index=0;
+    uart_write_str(UART0, "Unpadded FW Size: ");
+    uart_write_hex(UART0, size);
+    nl(UART0);
     for(int i=0;i<size;i++){
         data2write[data2write_index] = data[i];
         data2write_index++;
-        if (data2write_index>=FLASH_PAGESIZE){
-            
-            // Try to write flash and check for error
-            if (program_flash(page_addr, data2write, data2write_index)){
+        if (data2write_index==FLASH_PAGESIZE||i==size-1){
+            uart_write_str(UART0, "Writing Page...");
+            nl(UART0);
+            /*
+            // Try to write flash and check for error - this if block is breaking the bootloader
+            if (program_flash(page_addr, data2write, FLASH_PAGESIZE)){
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
                 return;
-            }
-
+            }*/
+            
             // Verify flash program
-            if (memcmp(data, (void *) page_addr, data2write_index) != 0){
+            if (memcmp(data, (void *) page_addr, FLASH_PAGESIZE) != 0){
                 uart_write_str(UART0, "Flash check failed.\n");
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
@@ -368,39 +377,13 @@ void write_to_flash(unsigned char* data, uint32_t size){
             // Update to next page
             page_addr += FLASH_PAGESIZE;
             data2write_index = 0;
+            
         }
     }    
 
 }
 
 
-    //load firmware into flash UNFINISHED
-    int numpages = (int)(sizeof(unencrypted_data)/FLASH_PAGESIZE);
-
-    //create array of strings
-    char* dataarr[numpages];
-    for (size_t i = 0; i < numpages; i++)
-    {
-        int index = i*FLASH_PAGESIZE;
-        char current_page[FLASH_PAGESIZE];
-        for (size_t j = 0; j < FLASH_PAGESIZE; j++)
-        {
-            /* append data from unencrypted */
-            
-            current_page[j] = unencrypted_data[index+j];
-        }   
-        //put string in each index of array of strings
-        dataarr[i] = current_page;
-
-    }
-
-    for (size_t i = 0; i < numpages; i++)
-    {
-        program_flash(FLASH_BASE + (i * FLASH_PAGESIZE), dataarr[i], FLASH_PAGESIZE);
-    }
-    //deal with the incomplete page below
-    
-}
 
 
 /*
@@ -411,8 +394,7 @@ void write_to_flash(unsigned char* data, uint32_t size){
  * This functions performs an erase of the specified flash page before writing
  * the data.
  */
-long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_len)
-{
+long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_len){
     uint32_t word = 0;
     int ret;
     int i;
@@ -511,9 +493,6 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t *start, uint32_t len)
 unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char iv_cbc[16]){
     
     uart_write_str(UART0, "in decryption function");
-    nl(UART0);
-    
-    uart_write_hex(UART0, data_len);
     nl(UART0);
 
 

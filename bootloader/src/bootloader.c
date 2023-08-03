@@ -39,6 +39,7 @@ void load_firmware(void);
 void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum);
+void write_to_flash(unsigned char* data, uint32_t size);
 unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char iv[16]);
 int roundUp(int numToRound, int multiple);
 
@@ -230,10 +231,7 @@ void load_firmware(void)
     unsigned char data[roundUp(size,16)];
 
     uart_write_str(UART0, "Received Firmware Size: ");
-    uart_write_str(UART0, "test");
-    uart_write_hex(UART0, 1);
     uart_write_hex(UART0, roundUp(size,16));
-    uart_write_str(UART0, "test");
     nl(UART0);
 
     // Get version as 2 bytes
@@ -270,10 +268,8 @@ void load_firmware(void)
     uint32_t metadata = ((size & 0xFFFF) << 16) | (version & 0xFFFF);
     program_flash(METADATA_BASE, (uint8_t *)(&metadata), 4);
 
-    uart_write(UART1, OK); // Acknowledge the metadata.
-
     /* Loop here until you can get all your characters and stuff */
-    while (1)
+    while (true)
     {
         // Get start frame endian short
         rcv = uart_read(UART1, BLOCKING, &read);
@@ -332,7 +328,14 @@ void load_firmware(void)
     nl(UART0);
     unsigned char* unencrypted_data = decrypt_aes(data, sizeof(data), iv);
     uart_write_str(UART0, "Writing to Flash");
-    nl(UART0); /*
+    nl(UART0); 
+
+    write_to_flash(data, size);
+                     
+}
+
+void write_to_flash(unsigned char* data, uint32_t size){
+    uint32_t page_addr=0;
     unsigned char data2write[FLASH_PAGESIZE];
     uint32_t data2write_index=0;
     for(int i=0;i<size;i++){
@@ -366,10 +369,9 @@ void load_firmware(void)
             page_addr += FLASH_PAGESIZE;
             data2write_index = 0;
         }
-    }    */
-                     
+    }    
+
 }
-    // decrypt and load raw data into flash
 
 
 /*

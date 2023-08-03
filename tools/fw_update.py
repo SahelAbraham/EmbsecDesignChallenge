@@ -132,7 +132,7 @@ def update(ser, infile, debug):
 
     # Send a zero length payload to tell the bootlader to finish writing it's page.
     ser.write(p16(1,endian = "little"))
-    ser.write(struct.pack(">H", 0x0000))
+    ser.write(p16(0, endian = "little"))
     resp = ser.read(1)  # Wait for an OK from the bootloader
     if resp != RESP_OK:
         raise RuntimeError("ERROR: Bootloader responded to zero length frame with {}".format(repr(resp)))

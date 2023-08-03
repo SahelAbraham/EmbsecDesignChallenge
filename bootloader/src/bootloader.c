@@ -374,33 +374,6 @@ void write_to_flash(unsigned char* data, uint32_t size){
 }
 
 
-    //load firmware into flash UNFINISHED
-    int numpages = (int)(sizeof(unencrypted_data)/FLASH_PAGESIZE);
-
-    //create array of strings
-    char* dataarr[numpages];
-    for (size_t i = 0; i < numpages; i++)
-    {
-        int index = i*FLASH_PAGESIZE;
-        char current_page[FLASH_PAGESIZE];
-        for (size_t j = 0; j < FLASH_PAGESIZE; j++)
-        {
-            /* append data from unencrypted */
-            
-            current_page[j] = unencrypted_data[index+j];
-        }   
-        //put string in each index of array of strings
-        dataarr[i] = current_page;
-
-    }
-
-    for (size_t i = 0; i < numpages; i++)
-    {
-        program_flash(FLASH_BASE + (i * FLASH_PAGESIZE), dataarr[i], FLASH_PAGESIZE);
-    }
-    //deal with the incomplete page below
-    
-}
 
 
 /*

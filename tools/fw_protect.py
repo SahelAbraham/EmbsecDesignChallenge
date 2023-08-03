@@ -37,16 +37,14 @@ def protect_firmware(infile, outfile, version, message):
     with open("secret_build_output.txt", 'rb') as secrets_fp:
         aes_key1 = secrets_fp.readline() #pulls cbc key from file
         aes_key2 = secrets_fp.readline() #pulls gcm key from file
-        gcm_aad = secrets_fp.readline() #pulls aad from file
 
         aes_key1 = aes_key1[0:-1] #drops newline character
         aes_key2 = aes_key2[0:-1] #drops newline character
     # Make an IV
     aes_cbc_iv = os.urandom(16) 
-    #aes_gcm_nonce = os.urandom(16) #for aes gcm 
     
     # Encrypt firmware + hash with AES-CBC
-    firmware_all = firmware + firmware_hash
+    firmware_all = version_pack + firmware + firmware_hash
     cipher = AES.new(aes_key1, AES.MODE_CBC,iv=aes_cbc_iv)
     length_pack = p16(len(firmware_all ), endian = "little")
     if len(firmware_all)%16 !=0:
@@ -58,7 +56,7 @@ def protect_firmware(infile, outfile, version, message):
     # cipher.update(gcm_aad)
 
     msg_size = p16(len(message.encode()), endian = "little")
-    ciphertext_final = version_pack + msg_size + message.encode() + ciphertext + aes_cbc_iv 
+    ciphertext_final = msg_size + message.encode() + ciphertext + aes_cbc_iv 
     
     # ciphertext_final, tag = cipher.encrypt_and_digest(pad(ciphertext_all,16))
     ciphertext_final = length_pack + ciphertext_final# + aes_gcm_nonce + tag

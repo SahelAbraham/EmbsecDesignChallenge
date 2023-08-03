@@ -95,12 +95,11 @@ def update(ser, infile, debug):
     with open(infile, "rb") as fp:
         all_data = fp.read()
     size = all_data[:2]
-    version = all_data[2:4]
-    msg_size = all_data[4:6]
+    msg_size = all_data[2:4]
     msg_size_int = u16(msg_size, endianness = 'little')
-    msg = all_data[6:6+msg_size_int]
+    msg = all_data[4:4+msg_size_int]
     iv = all_data[-16:]
-    data_to_send = all_data[6+msg_size_int:-16] # -16 for tag, -12 for nonce
+    data_to_send = all_data[4+msg_size_int:-16] # -16 for tag, -12 for nonce
     ser.write(b"U")
 
     print("Waiting for bootloader to enter update mode...")
@@ -110,7 +109,6 @@ def update(ser, infile, debug):
     print("Writing Size")
     ser.write(size)
     print("Writing Metadata")
-    ser.write(version)
     ser.write(msg_size)
     ser.write(msg)
     ser.write(iv)

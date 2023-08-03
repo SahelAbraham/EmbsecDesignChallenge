@@ -360,7 +360,7 @@ void write_to_flash(unsigned char* data, uint32_t size){
             //     program_flash(page_addr, tempdata, 1);
             //     page_addr += 1;
             // }
-            if (program_flash(page_addr, data2write, 1024)){
+            if (program_flash(page_addr, data2write, data2write_index)){
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
                 return;
@@ -368,7 +368,7 @@ void write_to_flash(unsigned char* data, uint32_t size){
             
             
             // Verify flash program
-            if (memcmp(data, (void *) page_addr, FLASH_PAGESIZE) != 0){
+            if (memcmp(data2write, (void *) page_addr, data2write_index) != 0){
                 uart_write_str(UART0, "Flash check failed.\n");
                 uart_write(UART1, ERROR); // Reject the firmware
                 SysCtlReset();            // Reset device
@@ -387,7 +387,9 @@ void write_to_flash(unsigned char* data, uint32_t size){
             page_addr+=FLASH_PAGESIZE;
             
         }
-    }    
+    }
+    uart_write_str(UART0, "Finished Uploading.");
+    nl(UART0);    
 
 }
 

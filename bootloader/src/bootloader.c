@@ -346,7 +346,7 @@ void write_to_flash(unsigned char* data, uint32_t size){
     uart_write_str(UART0, "Unpadded FW Size: ");
     uart_write_hex(UART0, size);
     nl(UART0);
-    for(int i=0;i<size;i++){
+    for(int i=0;i<size-32;i++){
         data2write[data2write_index] = data[i];
         data2write_index++;
         if (data2write_index==FLASH_PAGESIZE||i==size-1){
@@ -384,6 +384,7 @@ void write_to_flash(unsigned char* data, uint32_t size){
 
             // Update to next page
             data2write_index = 0;
+            page_addr+=FLASH_PAGESIZE;
             
         }
     }    

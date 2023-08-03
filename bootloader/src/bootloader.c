@@ -190,6 +190,17 @@ void load_initial_firmware(void)
     }
 }
 
+int roundUp(int numToRound, int multiple)
+{
+    if (multiple == 0)
+        return numToRound;
+
+    int remainder = numToRound % multiple;
+    if (remainder == 0)
+        return numToRound;
+
+    return numToRound + multiple - remainder;
+}
 /*
  * Load the firmware into flash.
  */
@@ -219,7 +230,10 @@ void load_firmware(void)
     unsigned char data[roundUp(size,16)];
 
     uart_write_str(UART0, "Received Firmware Size: ");
+    uart_write_str(UART0, "test");
+    uart_write_hex(UART0, 1);
     uart_write_hex(UART0, roundUp(size,16));
+    uart_write_str(UART0, "test");
     nl(UART0);
 
     // Get version as 2 bytes
@@ -250,18 +264,6 @@ void load_firmware(void)
     }
     uart_write_str(UART0, "Received Metadata");
     nl(UART0);
-
-    //unsigned char gcm_nonce[16];
-    //unsigned char tag[16];
-
-    //for (int i = 0; i < 16; i++)
-    //{
-     //   gcm_nonce[i] = uart_read(UART1, BLOCKING, &read);
-    //}
-    //for (int i = 0; i < 16; i++)
-    //{
-    //    tag[i] = uart_read(UART1, BLOCKING, &read);
-    //}
 
     // Write new firmware size and version to Flash
     // Create 32 bit word for flash programming, version is at lower address, size is at higher address
@@ -329,23 +331,47 @@ void load_firmware(void)
     uart_write_str(UART0, "starting decrypt");
     nl(UART0);
     unsigned char* unencrypted_data = decrypt_aes(data, sizeof(data), iv);
-    uart_write_str(UART0, "unpadded size: ");
-    uart_write_hex(UART0, total_data_size);
-    nl(UART0);
+    uart_write_str(UART0, "Writing to Flash");
+    nl(UART0); /*
+    unsigned char data2write[FLASH_PAGESIZE];
+    uint32_t data2write_index=0;
+    for(int i=0;i<size;i++){
+        data2write[data2write_index] = data[i];
+        data2write_index++;
+        if (data2write_index>=FLASH_PAGESIZE){
+            
+            // Try to write flash and check for error
+            if (program_flash(page_addr, data2write, data2write_index)){
+                uart_write(UART1, ERROR); // Reject the firmware
+                SysCtlReset();            // Reset device
+                return;
+            }
+
+            // Verify flash program
+            if (memcmp(data, (void *) page_addr, data2write_index) != 0){
+                uart_write_str(UART0, "Flash check failed.\n");
+                uart_write(UART1, ERROR); // Reject the firmware
+                SysCtlReset();            // Reset device
+                return;
+            }
+
+            // Write debugging messages to UART2.
+            uart_write_str(UART0, "Page successfully programmed\nAddress: ");
+            uart_write_hex(UART0, page_addr);
+            uart_write_str(UART0, "\nBytes: ");
+            uart_write_hex(UART0, data2write_index);
+            nl(UART0);
+
+            // Update to next page
+            page_addr += FLASH_PAGESIZE;
+            data2write_index = 0;
+        }
+    }    */
+                     
+}
     // decrypt and load raw data into flash
-}
 
-int roundUp(int numToRound, int multiple)
-{
-    if (multiple == 0)
-        return numToRound;
 
-    int remainder = numToRound % multiple;
-    if (remainder == 0)
-        return numToRound;
-
-    return numToRound + multiple - remainder;
-}
 /*
  * Program a stream of bytes to the flash.
  * This function takes the starting address of a 1KB page, a pointer to the

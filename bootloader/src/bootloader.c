@@ -430,7 +430,7 @@ unsigned char* decrypt_aes(unsigned char* data, unsigned char* nonce, unsigned c
         // SysCtlReset();            // Reset device
         // return;
      //}
-    
+       
     //bearssl gcm implementation
     //create gcm context, block cipher context with aes-128, ghash
     br_gcm_context ctx;

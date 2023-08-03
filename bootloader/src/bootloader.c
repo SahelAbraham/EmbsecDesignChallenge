@@ -40,6 +40,7 @@ void boot_firmware(void);
 long program_flash(uint32_t, unsigned char *, unsigned int);
 bool verify_frame(unsigned char *frame_data, int frame_len, unsigned char *hashed_checksum);
 unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char iv[16]);
+int roundUp(int numToRound, int multiple);
 
 // Firmware Constants
 #define METADATA_BASE 0xFC00 // base address of version and firmware size in Flash
@@ -203,6 +204,7 @@ void load_firmware(void)
     uint32_t size = 0;
     uint32_t msg_size=0;
     uint32_t version=0;
+    uint32_t total_data_size=0;
 
     // Get size as 2 bytes
     rcv = uart_read(UART1, BLOCKING, &read);
@@ -214,7 +216,7 @@ void load_firmware(void)
         SysCtlReset();            // Reset device
         return;
     }
-    unsigned char data[size];
+    unsigned char data[roundUp(size,16)];
 
     uart_write_str(UART0, "Received Firmware Size: ");
     uart_write_hex(UART0, size);
@@ -291,6 +293,9 @@ void load_firmware(void)
         frame_length = (int)rcv << 8;
         rcv = uart_read(UART1, BLOCKING, &read);
         frame_length += (int)rcv;
+        uart_write_str(UART0, "Frame size: ");
+        uart_write_hex(UART0, frame_length);
+        nl(UART0);
         if (frame_length == 0)
         {
             uart_write_str(UART0, "finished receiving data");
@@ -298,6 +303,7 @@ void load_firmware(void)
             uart_write(UART1, OK); // Acknowledge the frame.
             break;
         }
+        total_data_size+=frame_length;
         unsigned char tempdata[frame_length];
         // Get the 256 length data
         for (int i = 0; i < frame_length; i++)
@@ -326,6 +332,17 @@ void load_firmware(void)
     // decrypt and load raw data into flash
 }
 
+int roundUp(int numToRound, int multiple)
+{
+    if (multiple == 0)
+        return numToRound;
+
+    int remainder = numToRound % multiple;
+    if (remainder == 0)
+        return numToRound;
+
+    return numToRound + multiple - remainder;
+}
 /*
  * Program a stream of bytes to the flash.
  * This function takes the starting address of a 1KB page, a pointer to the

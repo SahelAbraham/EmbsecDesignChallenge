@@ -442,12 +442,12 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t *start, uint32_t len)
     }
 }
 //bytes to hex (?)
-void byteToHexString(unsigned char byte, char* hexString) {
-    static const char hexChars[] = "0123456789ABCDEF";
-    hexString[0] = hexChars[(byte >> 4) & 0xF];
-    hexString[1] = hexChars[byte & 0xF];
-    hexString[2] = '\0'; // Null-terminate the string
-}
+//void byteToHexString(unsigned char byte, char* hexString) {
+   // static const char hexChars[] = "0123456789ABCDEF";
+   // hexString[0] = hexChars[(byte >> 4) & 0xF];
+  //  hexString[1] = hexChars[byte & 0xF];
+   // hexString[2] = '\0'; // Null-terminate the string
+//}
 unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char iv_cbc[16]){
     
     uart_write_str(UART0, "in decryption function");

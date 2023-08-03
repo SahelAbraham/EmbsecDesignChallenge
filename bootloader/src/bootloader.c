@@ -219,7 +219,7 @@ void load_firmware(void)
     unsigned char data[roundUp(size,16)];
 
     uart_write_str(UART0, "Received Firmware Size: ");
-    uart_write_hex(UART0, size);
+    uart_write_hex(UART0, roundUp(size,16));
     nl(UART0);
 
     // Get version as 2 bytes
@@ -329,6 +329,9 @@ void load_firmware(void)
     uart_write_str(UART0, "starting decrypt");
     nl(UART0);
     unsigned char* unencrypted_data = decrypt_aes(data, sizeof(data), iv);
+    uart_write_str(UART0, "unpadded size: ");
+    uart_write_hex(UART0, total_data_size);
+    nl(UART0);
     // decrypt and load raw data into flash
 }
 

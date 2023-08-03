@@ -17,6 +17,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Util.Padding import pad
 from pwn import p16
+import string
+import secrets
 
 def protect_firmware(infile, outfile, version, message):
     # Load firmware binary from infile
@@ -60,6 +62,7 @@ def protect_firmware(infile, outfile, version, message):
     ciphertext_all = version_pack + msg_size + message.encode() + ciphertext + aes_cbc_iv 
     
     ciphertext_final, tag = cipher.encrypt_and_digest(pad(ciphertext_all,16))
+    print(tag)
     length_pack = p16(len(ciphertext_final ), endian = "little")
     ciphertext_final = length_pack + ciphertext_final + aes_gcm_nonce + tag
     # Write firmware blob to outfile

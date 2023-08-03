@@ -410,15 +410,24 @@ void uart_write_hex_bytes(uint8_t uart, uint8_t *start, uint32_t len)
     }
 }
 //bytes to hex (?)
-void byteToHexString(unsigned char byte, char* hexString) {
-    static const char hexChars[] = "0123456789ABCDEF";
-    hexString[0] = hexChars[(byte >> 4) & 0xF];
-    hexString[1] = hexChars[byte & 0xF];
-    hexString[2] = '\0'; // Null-terminate the string
-}
+//void byteToHexString(unsigned char byte, char* hexString) {
+   // static const char hexChars[] = "0123456789ABCDEF";
+  //  hexString[0] = hexChars[(byte >> 4) & 0xF];
+   // hexString[1] = hexChars[byte & 0xF];
+  //  hexString[2] = '\0'; // Null-terminate the string
+//}
 unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char* nonce, unsigned char* tag){
     
     uart_write_str(UART0, "in decryption function");
+    nl(UART0);
+
+    uart_write_hex_bytes(UART0, nonce, 16);
+    nl(UART0);
+
+    uart_write_str(UART0, gcmkey);
+    nl(UART0);
+
+    uart_write_hex_bytes(UART0, tag, 16);
     nl(UART0);
 
     /* beaverssl GCM implementation
@@ -493,6 +502,7 @@ unsigned char* decrypt_aes(unsigned char* data, int data_len, unsigned char* non
 
     uart_write_hex_bytes(UART0, data, data_len);
     nl(UART0);
+    return data;
 }
 
 // verifying if checksum for frames are correct

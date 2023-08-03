@@ -11,4 +11,8 @@ bootloader/**/*.o
 bootloader/**/*.axf
 bootloader/**/*.bin
 
+tools/gdb.sh
+bootloader/src/bootloader_secrets.h
+tools/secret_build_output.txt
+
 **/__pycache__/

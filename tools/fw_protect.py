@@ -54,12 +54,9 @@ def protect_firmware(infile, outfile, version, message):
     # Encrypt version + message + previous message + CBC_IV with AES-GCM
     # cipher = AES.new(aes_key2, AES.MODE_GCM, nonce = aes_gcm_nonce)
     # cipher.update(gcm_aad)
-
-    msg_size = p16(len(message.encode()), endian = "little")
-    ciphertext_final = msg_size + message.encode() + ciphertext + aes_cbc_iv 
+    msg_size = p16(len(message.encode()+b'\x00'), endian = "little")
+    ciphertext_final = length_pack + msg_size + message.encode()+b'\x00' + ciphertext + aes_cbc_iv 
     
-    # ciphertext_final, tag = cipher.encrypt_and_digest(pad(ciphertext_all,16))
-    ciphertext_final = length_pack + ciphertext_final# + aes_gcm_nonce + tag
     # Write firmware blob to outfile
     with open(outfile, 'wb+') as outfile:
         outfile.write(ciphertext_final)

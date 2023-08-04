@@ -350,14 +350,13 @@ void write_to_flash(unsigned char* data, uint32_t size, unsigned char* msg, unsi
     
     uart_write_str(UART2, " confirmed.");
     nl(UART2);
-
-    uint32_t metadata = ((uint32_t)((size-32-2) & 0xFFFF) << 16) | (version & 0xFFFF);
+    uint32_t metadata = ((uint16_t)((size-32-2) & 0xFFFF) << 16) | (version & 0xFFFF);
     program_flash(METADATA_BASE, (uint8_t *)(&metadata), 4);
 
     for(int i=2;i<size-32;i++){
         data2write[data2write_index] = data[i];
         data2write_index++;
-        if (data2write_index==FLASH_PAGESIZE||i==size-33){
+        if (data2write_index==FLASH_PAGESIZE){
             uart_write_str(UART2, "Writing Page...");
             nl(UART2);
             
@@ -384,29 +383,45 @@ void write_to_flash(unsigned char* data, uint32_t size, unsigned char* msg, unsi
             data2write_index = 0;
             
         }
-    }
-    //Write Message to Flash
-    uart_write_str(UART2, "Writing Message...");
-    uart_write_str(UART2, msg);
-    nl(UART2);
-    uart_write_str(UART2, "Curr Flash Position");
-    uart_write_hex(UART2, page_addr);
-    nl(UART2);
-    
-    if (program_flash(page_addr, (uint8_t *)msg, msg_len)){
-        uart_write(UART1, ERROR); // Reject the firmware
-        SysCtlReset();            // Reset device
-        return;
-    }
-    
-    // Verify flash program
-    if (memcmp(msg, (void *) page_addr, msg_len) != 0){
-        uart_write_str(UART2, "Flash check failed.\n");
-        uart_write(UART1, ERROR); // Reject the firmware
-        SysCtlReset();            // Reset device
-        return;
-    }
+        if(i==size-33){
+            uint32_t true_size = size-32-2;
+            //Write Message to Flash
+            uart_write_str(UART2, "Writing Message...");
+            uart_write_str(UART2, msg);
+            nl(UART2);
+            uint8_t temp_buf[FLASH_PAGESIZE];
+            uint16_t rem_fw_bytes = true_size % FLASH_PAGESIZE;
+            uint16_t rem_msg_bytes;
+            int flashes = true_size/FLASH_PAGESIZE;
+            if (rem_fw_bytes == 0){
+                // No firmware left. Just write the release message
+                program_flash(FW_BASE + (flashes * FLASH_PAGESIZE), (uint8_t *)msg, msg_len);
+            }else{
+                // Some firmware left. Determine how many bytes of release message can fit
+                if (msg_len > (FLASH_PAGESIZE - rem_fw_bytes)){
+                    rem_msg_bytes = msg_len - (FLASH_PAGESIZE - rem_fw_bytes);
+                }else{
+                    rem_msg_bytes = 0;
+                }
 
+                // Copy rest of firmware
+                memcpy(temp_buf, data + (flashes * FLASH_PAGESIZE), rem_fw_bytes);
+                // Copy what will fit of the release message
+                memcpy(temp_buf + rem_fw_bytes, msg, msg_len - rem_msg_bytes);
+                // Program the final firmware and first part of the release message
+                program_flash(FW_BASE + (flashes * FLASH_PAGESIZE), temp_buf, rem_fw_bytes + (msg_len - rem_msg_bytes));
+
+                // If there are more bytes, program them directly from the release message string
+                if (rem_msg_bytes > 0){
+                    // Writing to a new page. Increment pointer
+                    flashes++;
+                    program_flash(FW_BASE + (flashes * FLASH_PAGESIZE), (uint8_t *)(msg + (msg_len - rem_msg_bytes)), rem_msg_bytes);
+                }
+            }
+
+        }
+    }
+    
     // Write debugging messages to UART2.
     uart_write_str(UART2, "Message successfully programmed.");
     nl(UART2);
@@ -473,7 +488,7 @@ long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_le
 void boot_firmware(void)
 {
     // compute the release message address, and then print it
-    uint16_t fw_size = *fw_size_address;
+    uint16_t fw_size = *(uint16_t*)(METADATA_BASE + 2);
     fw_release_message_address = (uint8_t *)(FW_BASE + fw_size);
     uart_write_str(UART2, (char *)fw_release_message_address);
 

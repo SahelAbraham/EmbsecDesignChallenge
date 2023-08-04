@@ -98,6 +98,7 @@ def update(ser, infile, debug):
     msg_size = all_data[2:4]
     msg_size_int = u16(msg_size, endianness = 'little')
     msg = all_data[4:4+msg_size_int]
+    print(msg)
     iv = all_data[-16:]
     data_to_send = all_data[4+msg_size_int:-16] # -16 for tag, -12 for nonce
     ser.write(b"U")

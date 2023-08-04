@@ -393,7 +393,7 @@ void write_to_flash(unsigned char* data, uint32_t size, unsigned char* msg, unsi
     uart_write_hex(UART2, page_addr);
     nl(UART2);
     
-    if (program_flash(page_addr, msg, msg_len)){
+    if (program_flash(page_addr, (uint8_t *)msg, msg_len)){
         uart_write(UART1, ERROR); // Reject the firmware
         SysCtlReset();            // Reset device
         return;
@@ -475,8 +475,6 @@ void boot_firmware(void)
     // compute the release message address, and then print it
     uint16_t fw_size = *fw_size_address;
     fw_release_message_address = (uint8_t *)(FW_BASE + fw_size);
-    uart_write_hex(UART2,fw_size);
-    nl(UART2);
     uart_write_str(UART2, (char *)fw_release_message_address);
 
     // Boot the firmware

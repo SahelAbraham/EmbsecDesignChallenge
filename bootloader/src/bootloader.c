@@ -57,14 +57,16 @@ int roundUp(int numToRound, int multiple);
 #define UPDATE ((unsigned char)'U')
 #define BOOT ((unsigned char)'B')
 
+//Memory Locations
+#define FW_VERSION_ADDRESS (uint16_t *)METADATA_BASE
+#define FW_SIZE_ADDRESS (uint16_t *)(METADATA_BASE + 2)
+
 // Firmware v2 is embedded in bootloader
 // Read up on these symbols in the objcopy man page (if you want)!
 extern int _binary_firmware_bin_start;
 extern int _binary_firmware_bin_size;
 
 // Device metadata
-uint16_t *fw_version_address = (uint16_t *)METADATA_BASE;
-uint16_t *fw_size_address = (uint16_t *)(METADATA_BASE + 2);
 uint8_t *fw_release_message_address;
 void uart_write_hex_bytes(uint8_t uart, uint8_t *start, uint32_t len);
 
@@ -103,11 +105,11 @@ int main(void)
             load_firmware();
             uart_write_str(UART2, "Loaded new firmware.\n");
             nl(UART2);
-            uart_write_str(UART2, "Type 'B' to load the firmware.");
-            if(uart_read(UART2, BLOCKING, &resp)==BOOT){
-                uart_write_str(UART2, "B");
-                boot_firmware();
-            }
+            // uart_write_str(UART2, "Type 'B' to load the firmware.");
+            // if(uart_read(UART2, BLOCKING, &resp)==BOOT){
+            //     uart_write_str(UART2, "B");
+            //     boot_firmware();
+            // }
         }
         else if (instruction == BOOT)
         {
@@ -322,7 +324,7 @@ void load_firmware(void)
 }
 
 
-unsigned char data2write[FLASH_PAGESIZE];
+volatile unsigned char data2write[FLASH_PAGESIZE];
 void write_to_flash(unsigned char* data, uint32_t size, unsigned char* msg, unsigned int msg_len){
     uint32_t page_addr=FW_BASE;
     uint32_t data2write_index=0;
@@ -339,7 +341,7 @@ void write_to_flash(unsigned char* data, uint32_t size, unsigned char* msg, unsi
     uart_write_str(UART2, "Firmware Version: ");
     uart_write_hex(UART2, version);
 
-    uint16_t old_version = *fw_version_address;
+    uint16_t old_version = *FW_VERSION_ADDRESS;
 
     if (version != 0 && version < old_version){
         uart_write_str(UART2, " denied.");
@@ -488,7 +490,7 @@ long program_flash(uint32_t page_addr, unsigned char *data, unsigned int data_le
 void boot_firmware(void)
 {
     // compute the release message address, and then print it
-    uint16_t fw_size = *(uint16_t*)(METADATA_BASE + 2);
+    uint16_t fw_size = *FW_SIZE_ADDRESS;
     fw_release_message_address = (uint8_t *)(FW_BASE + fw_size);
     uart_write_str(UART2, (char *)fw_release_message_address);
 

@@ -100,7 +100,7 @@ def update(ser, infile, debug):
     msg = all_data[4:4+msg_size_int]
     print(msg)
     iv = all_data[-16:]
-    data_to_send = all_data[4+msg_size_int:-16] # -16 for tag, -12 for nonce
+    data_to_send = all_data[4+msg_size_int:-16] # -16 for iv
     ser.write(b"U")
 
     print("Waiting for bootloader to enter update mode...")
